@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClassReserve | Online Classroom Reservation System</title>
-    <!-- Connect CSS -->
+    <title>ClassReserve | Classroom Reservation System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Website Header -->
     <header class="header">
         <div class="container">
             <h1>ClassReserve</h1>
@@ -16,54 +14,48 @@
         </div>
     </header>
     <main class="container">
-        <!-- Login Section -->
+        <!-- LOGIN -->
         <section id="login-section" class="card">
-            <h2>Welcome to ClassReserve</h2>
-            <p>Enter your details to access the reservation dashboard.</p>
+            <h2>Login to ClassReserve</h2>
+            <p>Enter your username and password to continue.</p>
             <form id="login-form">
                 <div class="form-group">
-                    <label for="role">Account Type</label>
-                    <select id="role" name="role" required>
-                        <option value="student">Student</option>
-                        <option value="faculty">Faculty</option>
-                        <option value="admin">Administrator</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="name">Full Name</label>
+                    <label for="username">Username</label>
                     <input
                         type="text"
-                        id="name"
-                        name="name"
-                        placeholder="Enter your full name"
+                        id="username"
+                        placeholder="Enter your username"
+                        autocomplete="username"
                         required
                     >
                 </div>
                 <div class="form-group">
-                    <label for="email">School Email</label>
+                    <label for="password">Password</label>
                     <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="name@school.edu"
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
                         required
                     >
                 </div>
-                <button type="submit">Continue to Dashboard</button>
+                <p id="login-error" role="alert" hidden>
+                    Incorrect username or password.
+                </p>
+                <button type="submit">Log In</button>
             </form>
         </section>
-        <!-- Dashboard Section -->
+        <!-- DASHBOARD -->
         <section id="dashboard-section" class="card" hidden>
             <div class="dashboard-header">
                 <div>
                     <h2 id="dashboard-title">Dashboard</h2>
                     <p id="welcome-message"></p>
                 </div>
-                <button type="button" id="logout-button" class="secondary-button">
-                    Sign Out
+                <button type="button" id="logout-button">
+                    Log Out
                 </button>
             </div>
-            <!-- Navigation -->
             <nav class="navigation" aria-label="Dashboard navigation">
                 <button type="button" data-view="dashboard">
                     Dashboard
@@ -75,18 +67,12 @@
                     Reservations
                 </button>
             </nav>
-            <!-- Dashboard Content -->
-            <div id="dashboard-content">
-                <h3>Welcome!</h3>
-                <p>Choose an option above to manage classroom reservations.</p>
-            </div>
+            <div id="dashboard-content"></div>
         </section>
     </main>
-    <!-- Website Footer -->
     <footer class="footer">
-        <p>&copy; 2026 ClassReserve. Online Classroom Reservation System.</p>
+        <p>&copy; 2026 ClassReserve | Online Classroom Reservation System</p>
     </footer>
-    <!-- Connect JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
