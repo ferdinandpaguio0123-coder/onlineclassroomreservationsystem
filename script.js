@@ -1,6 +1,164 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root{--ink:#19243a;--muted:#7c8799;--line:#e7ebf2;--bg:#f6f8fc;--white:#fff;--blue:#4263eb;--blue-dark:#3152d4;--pale:#edf1ff;--green:#13865b;--green-bg:#e5f7ef;--orange:#a96913;--orange-bg:#fff3dc;--red:#c2414c;--red-bg:#ffebed;--shadow:0 12px 34px rgba(29,47,84,.07)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app-shell{min-height:100vh;display:flex}.sidebar{width:248px;background:#fff;border-right:1px solid var(--line);padding:27px 17px 20px;display:flex;flex-direction:column;flex-shrink:0}.brand{display:flex;align-items:center;gap:11px;color:var(--ink);text-decoration:none;padding:0 10px 37px}.brand-mark{width:39px;height:39px;display:grid;place-items:center;background:var(--blue);color:white;border-radius:12px;font-family:Manrope;font-weight:800;letter-spacing:-1px}.brand strong{display:block;font-family:Manrope;font-size:16px}.brand small{display:block;font-size:9px;color:#97a0af;letter-spacing:1.3px;margin-top:3px}.side-label{font-size:10px;letter-spacing:1.4px;color:#a0a9b7;font-weight:700;padding:0 13px 12px}.side-nav{display:grid;gap:6px}.nav-link{width:100%;display:flex;align-items:center;gap:13px;padding:12px 13px;border:0;border-radius:10px;background:transparent;color:#6f7a8d;text-align:left;font-weight:600}.nav-link>span:first-child{font-size:18px;width:20px;text-align:center}.nav-link:hover{background:#f5f7fc;color:var(--ink)}.nav-link.active{background:var(--pale);color:var(--blue)}.nav-badge{margin-left:auto;background:#fff;border-radius:7px;padding:2px 7px;font-size:11px}.sidebar-bottom{margin-top:auto}.help-card{background:#f5f7fc;border:1px solid #edf0f6;border-radius:13px;padding:15px;margin:0 4px 20px}.help-icon{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:#e4eaff;color:var(--blue);font-weight:700;margin-bottom:11px}.help-card strong{font-size:12px}.help-card p{font-size:11px;line-height:1.6;color:var(--muted);margin:6px 0 0}.main-area{min-width:0;flex:1;display:flex;flex-direction:column}.topbar{height:76px;padding:0 36px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.82);border-bottom:1px solid var(--line)}.breadcrumb{color:#8c96a7;font-size:12px}.breadcrumb span{padding:0 9px;color:#c0c7d2}.breadcrumb strong{color:#364158}.top-actions{display:flex;align-items:center;gap:20px}.today-label{font-size:12px;color:#8993a4}.avatar{height:36px;width:36px;border-radius:50%;background:#e7ecff;color:var(--blue);display:grid;place-items:center;font-weight:700}.icon-button{border:1px solid var(--line);background:#fff;border-radius:9px;width:35px;height:35px;font-size:20px;color:#657087}.menu-button{display:none}.dashboard-app{padding:30px 36px 38px;flex:1}.page-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:25px}.eyebrow{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--blue);margin-bottom:9px}.page-heading h1,.login-panel h2{font-family:Manrope,sans-serif;font-size:27px;letter-spacing:-.8px;margin:0 0 8px}.page-heading p,.muted{color:var(--muted);margin:0;line-height:1.6}.primary-button,.secondary-button,.danger-button{border:0;border-radius:9px;padding:11px 15px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:9px}.primary-button{background:var(--blue);color:#fff;box-shadow:0 4px 10px #4263eb24}.primary-button:hover{background:var(--blue-dark)}.secondary-button{background:#fff;border:1px solid var(--line);color:#59657a}.danger-button{background:var(--red-bg);color:var(--red)}.full-button{width:100%;margin-top:22px;padding:14px}.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}.stat-card,.panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.stat-card{padding:19px 20px}.stat-top{display:flex;justify-content:space-between;align-items:center;color:#788397;font-size:12px;font-weight:600}.stat-icon{width:35px;height:35px;border-radius:10px;display:grid;place-items:center;background:#edf1ff;color:var(--blue);font-size:17px}.stat-number{font-family:Manrope;font-size:29px;font-weight:800;letter-spacing:-1px;margin:14px 0 5px}.stat-caption{font-size:11px;color:#98a1b0}.content-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,1fr);gap:19px}.panel{padding:21px;margin-bottom:19px;min-width:0}.panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:19px}.panel-heading h2{font-family:Manrope;font-size:15px;margin:0}.text-button{border:0;background:transparent;color:var(--blue);font-weight:700;font-size:12px}.room-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.room-card{border:1px solid var(--line);border-radius:12px;padding:15px}.room-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.room-symbol{height:38px;width:38px;border-radius:10px;background:#eef2ff;display:grid;place-items:center;color:var(--blue);font-size:18px}.room-card h3{font-family:Manrope;font-size:14px;margin:12px 0 5px}.room-meta{font-size:11px;color:var(--muted);line-height:1.7}.room-footer{border-top:1px solid #f0f2f6;margin-top:13px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}.room-footer span{font-size:11px;color:#7b8697}.room-footer button{border:0;background:var(--pale);color:var(--blue);border-radius:7px;padding:7px 9px;font-size:11px;font-weight:700}.pill{display:inline-flex;align-items:center;border-radius:20px;padding:5px 9px;font-size:10px;font-weight:700;white-space:nowrap}.pill.available,.pill.approved{background:var(--green-bg);color:var(--green)}.pill.pending{background:var(--orange-bg);color:var(--orange)}.pill.rejected,.pill.maintenance{background:var(--red-bg);color:var(--red)}.pill.admin{background:#ecebff;color:#6555bd}.activity-list{display:grid}.activity-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid #f0f2f6}.activity-item:last-child{border-bottom:0}.activity-dot{width:8px;height:8px;background:#6c83f1;border-radius:50%;margin-top:5px;flex-shrink:0}.activity-item strong{font-size:12px;display:block;margin-bottom:4px}.activity-item small{font-size:11px;color:var(--muted);line-height:1.5}.table-wrap{overflow:auto}.data-table{width:100%;border-collapse:collapse;min-width:680px}.data-table th{text-align:left;font-size:10px;letter-spacing:.7px;color:#929cad;text-transform:uppercase;padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap}.data-table td{padding:14px 13px;border-bottom:1px solid #f0f2f6;font-size:12px;color:#4d586c;vertical-align:middle}.data-table tr:last-child td{border-bottom:0}.table-primary{font-weight:700;color:var(--ink);display:block;margin-bottom:4px}.table-secondary{font-size:10px;color:#9aa3b2}.table-actions{display:flex;gap:6px;flex-wrap:wrap}.small-action{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#fff;color:#657087;font-size:10px;font-weight:700}.small-action.approve{color:var(--green);background:var(--green-bg);border-color:transparent}.small-action.reject,.small-action.delete{color:var(--red);background:var(--red-bg);border-color:transparent}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}.search-input,.filter-select{border:1px solid var(--line);border-radius:9px;background:#fff;padding:10px 12px;color:var(--ink);outline:none}.search-input{min-width:210px;flex:1}.search-input:focus,input:focus,select:focus,textarea:focus{border-color:#aab8ff;box-shadow:0 0 0 3px #4263eb12;outline:none}label{display:block;font-weight:700;font-size:12px;margin:16px 0 7px;color:#465168}input,select,textarea{width:100%;border:1px solid #dfe4ed;border-radius:9px;padding:12px;color:var(--ink);background:#fff}textarea{resize:vertical}.empty-state{text-align:center;padding:34px 15px;color:var(--muted);font-size:12px}.empty-state strong{display:block;color:#455169;font-size:14px;margin-bottom:6px}.login-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr);min-height:calc(100vh - 124px);background:#fff;flex:1}.login-visual{background:#233cba;position:relative;overflow:hidden;padding:75px 7%;display:flex;align-items:center;color:#fff}.visual-content{position:relative;z-index:1;max-width:500px}.eyebrow.light{color:#c7d0ff}.visual-content h1{font-family:Manrope;font-size:clamp(42px,5vw,64px);line-height:1.1;letter-spacing:-2.7px;margin:18px 0}.visual-content h1 em{font-style:normal;color:#b9c6ff}.visual-content p{color:#dce3ff;font-size:15px;line-height:1.8;max-width:410px}.visual-stats{display:flex;gap:35px;margin-top:55px}.visual-stats div{display:grid;gap:5px}.visual-stats strong{font-family:Manrope;font-size:23px}.visual-stats span{font-size:11px;color:#d1d9ff}.visual-orb{position:absolute;border:1px solid #ffffff20;border-radius:50%;width:400px;height:400px;right:-100px;top:-140px}.orb-two{width:310px;height:310px;top:auto;right:-80px;bottom:-170px}.login-panel{max-width:440px;width:100%;padding:55px 35px;margin:auto}.login-panel h2{font-size:25px;margin-bottom:8px}.login-panel .muted{font-size:12px;margin-bottom:27px}.login-panel label{margin-top:17px}.demo-note{display:flex;gap:11px;background:#f6f8ff;border:1px solid #e9edff;border-radius:10px;padding:13px;margin-top:24px;color:#69758d}.demo-note>span{color:var(--blue);font-size:18px}.demo-note p{font-size:10px;line-height:1.6;margin:0}.demo-note strong{font-size:11px;color:#37435d}.login-mobile-brand{display:none}.footer{display:flex;justify-content:space-between;gap:15px;padding:18px 36px;color:#a0a8b6;font-size:10px;border-top:1px solid var(--line);background:#fff}.footer i{font-style:normal;padding:0 5px}.modal{border:0;border-radius:16px;padding:25px;width:min(510px,calc(100% - 28px));box-shadow:0 24px 80px #19243a33;color:var(--ink);max-height:90vh;overflow:auto}.modal::backdrop{background:#18233d77;backdrop-filter:blur(3px)}.modal-heading{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.modal-heading h2{font-family:Manrope;font-size:21px;margin:0}.modal-heading .eyebrow{margin-bottom:6px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:25px}.toast{position:fixed;bottom:24px;right:24px;background:#202b43;color:white;padding:13px 17px;border-radius:10px;box-shadow:var(--shadow);font-size:12px;z-index:10;opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.user-card{display:flex;align-items:center;gap:12px}.user-initial{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#edf1ff;color:var(--blue);font-weight:700}.notice{padding:12px 14px;background:#f1f4ff;border-radius:9px;color:#59678b;font-size:11px;line-height:1.6;margin-bottom:16px}
-@media(max-width:1100px){.sidebar{width:220px}.dashboard-app{padding:25px 22px}.topbar{padding:0 22px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.login-layout{grid-template-columns:1fr 1fr}.login-visual{padding:45px 8%}.visual-stats{gap:20px}}
-@media(max-width:780px){.sidebar{position:fixed;z-index:8;top:0;bottom:0;left:-260px;transition:left .2s;box-shadow:var(--shadow)}.sidebar.open{left:0}.menu-button{display:block}.topbar{height:64px;padding:0 17px;gap:12px;justify-content:flex-start}.breadcrumb{flex:1}.top-actions{gap:10px}.today-label{display:none}.dashboard-app{padding:23px 16px}.page-heading h1{font-size:23px}.page-heading{align-items:flex-start}.content-grid{grid-template-columns:1fr}.room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.footer{padding:16px;flex-wrap:wrap}.login-layout{display:block;min-height:auto}.login-visual{display:none}.login-panel{padding:36px 24px 45px;max-width:480px}.login-mobile-brand{display:flex;align-items:center;gap:10px;margin-bottom:45px}.login-mobile-brand strong{font-family:Manrope}.login-panel h2{font-size:23px}}
-@media(max-width:480px){.stats-grid{gap:10px}.stat-card{padding:14px}.stat-number{font-size:25px}.stat-top{font-size:10px}.stat-icon{width:29px;height:29px}.room-grid{grid-template-columns:1fr}.page-heading{flex-direction:column}.page-heading>.primary-button{width:100%}.toolbar>*{width:100%}.form-grid{grid-template-columns:1fr;gap:0}.footer span:last-child{display:none}.panel{padding:15px}.topbar .avatar{width:32px;height:32px}}
+/* ClassReserve prototype. Data is stored in this browser's localStorage.
+   This is for demonstration only: use Supabase authentication and database rules before real deployment. */
+(() => {
+  const $ = (s, root=document) => root.querySelector(s);
+  const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+  const STORE = { rooms:'cr_rooms_v1', bookings:'cr_bookings_v1', users:'cr_users_v1', session:'cr_session_v1' };
+  const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`;
+  const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const read = (key, fallback) => { try { const v=localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
+  const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  let rooms = read(STORE.rooms, null) || [
+    {id:'r101',name:'Lecture Hall 101',building:'Main Building',capacity:80,equipment:'Projector, microphone, whiteboard',status:'Available'},
+    {id:'r204',name:'Computer Lab 204',building:'Technology Block',capacity:35,equipment:'Computers, projector, air conditioning',status:'Available'},
+    {id:'r305',name:'Discussion Room 305',building:'Learning Center',capacity:20,equipment:'Whiteboard, display screen',status:'Available'},
+    {id:'r12',name:'Science Lab 12',building:'Science Building',capacity:28,equipment:'Lab benches, sink, safety equipment',status:'Available'}
+  ];
+  let bookings = read(STORE.bookings, []);
+  let users = read(STORE.users, []);
+  let currentUser = read(STORE.session, null);
+  let currentView = 'dashboard';
+  let toastTimer;
+  write(STORE.rooms, rooms);
+  const saveAll = () => { write(STORE.rooms,rooms); write(STORE.bookings,bookings); write(STORE.users,users); };
+  const roleLabel = role => ({admin:'Administrator',faculty:'Faculty',student:'Student'}[role] || role);
+  const pill = status => `<span class="pill ${safe(status.toLowerCase())}">${safe(status)}</span>`;
+  const roomById = id => rooms.find(r=>r.id===id);
+  const visibleBookings = () => currentUser.role==='admin' ? bookings : bookings.filter(b=>b.userId===currentUser.id);
+  const dateText = date => date ? new Date(`${date}T12:00:00`).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '—';
+  const timeText = t => t ? new Date(`2000-01-01T${t}`).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : '';
+  const setToast = msg => { const el=$('#toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),3000); };
+  const setView = view => { currentView=view; $('#pageCrumb').textContent=view[0].toUpperCase()+view.slice(1); $$('.nav-link[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view)); render(); $('#sidebar').classList.remove('open'); };
+  function initApp(){
+    $('#year').textContent=new Date().getFullYear();
+    $('#todayLabel').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+    $('#loginScreen').classList.toggle('hidden',!!currentUser);
+    $('#dashboardApp').classList.toggle('hidden',!currentUser);
+    if(currentUser){ $('#topAvatar').textContent=(currentUser.name||'U').trim().charAt(0).toUpperCase(); $$('.admin-only').forEach(el=>el.classList.toggle('hidden',currentUser.role!=='admin')); setView(currentView); }
+  }
+  function stats(){
+    const list=visibleBookings();
+    return [
+      {label:'Total classrooms',value:rooms.length,caption:'Registered learning spaces',icon:'▤'},
+      {label:'Available rooms',value:rooms.filter(r=>r.status==='Available').length,caption:'Ready to be reserved',icon:'⌂'},
+      {label:currentUser.role==='admin'?'Pending requests':'My pending requests',value:list.filter(b=>b.status==='Pending').length,caption:'Awaiting admin review',icon:'◷'},
+      {label:currentUser.role==='admin'?'Approved bookings':'My approved bookings',value:list.filter(b=>b.status==='Approved').length,caption:'Confirmed reservations',icon:'✓'}
+    ];
+  }
+  function heading(title,desc,action=''){return `<div class="page-heading"><div><span class="eyebrow">${currentUser.role==='admin'?'ADMIN WORKSPACE':currentUser.role==='faculty'?'FACULTY WORKSPACE':'STUDENT WORKSPACE'}</span><h1>${title}</h1><p>${desc}</p></div>${action}</div>`;}
+  function statCards(){return `<div class="stats-grid">${stats().map(s=>`<article class="stat-card"><div class="stat-top">${s.label}<span class="stat-icon">${s.icon}</span></div><div class="stat-number">${s.value}</div><div class="stat-caption">${s.caption}</div></article>`).join('')}</div>`;}
+  function roomCard(r){return `<article class="room-card"><div class="room-card-top"><span class="room-symbol">▤</span>${pill(r.status)}</div><h3>${safe(r.name)}</h3><div class="room-meta">⌖ ${safe(r.building)}<br>♙ Capacity: ${r.capacity} people<br>⚙ ${safe(r.equipment||'Standard facilities')}</div><div class="room-footer"><span>${r.capacity} seats</span>${r.status==='Available'?`<button data-book-room="${safe(r.id)}">Request room →</button>`:'<span>Unavailable</span>'}${currentUser.role==='admin'?`<button data-edit-room="${safe(r.id)}">Edit</button>`:''}</div></article>`;}
+  function recentActivity(){
+    const list=[...visibleBookings()].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+    if(!list.length)return '<div class="empty-state"><strong>No reservations yet</strong>Your reservation activity will appear here.</div>';
+    return `<div class="activity-list">${list.map(b=>`<div class="activity-item"><span class="activity-dot"></span><div><strong>${safe(b.roomName)} · ${pill(b.status)}</strong><small>${safe(b.purpose)}<br>${dateText(b.date)} · ${timeText(b.start)}–${timeText(b.end)}</small></div></div>`).join('')}</div>`;
+  }
+  function dashboardView(){
+    const action=currentUser.role==='admin'?'<button class="primary-button" data-action="add-room">＋ Add classroom</button>':'<button class="primary-button" data-action="new-booking">＋ Request a classroom</button>';
+    return heading(`Good day, ${safe(currentUser.name.split(' ')[0])} 👋`,'Here is what is happening with classroom reservations today.',action)+statCards()+`<div class="content-grid"><section class="panel"><div class="panel-heading"><h2>Classrooms</h2><button class="text-button" data-action="classrooms">View all →</button></div><div class="room-grid">${rooms.filter(r=>r.status==='Available').slice(0,4).map(roomCard).join('')||'<div class="empty-state">No available classrooms.</div>'}</div></section><section class="panel"><div class="panel-heading"><h2>Recent reservation activity</h2><button class="text-button" data-action="reservations">View all →</button></div>${recentActivity()}</section></div>`;
+  }
+  function classroomsView(){
+    const adminAction=currentUser.role==='admin'?'<button class="primary-button" data-action="add-room">＋ Add classroom</button>':'<button class="primary-button" data-action="new-booking">＋ Request reservation</button>';
+    return heading('Classrooms','Browse rooms, capacity, facilities, and availability.',adminAction)+`<div class="toolbar"><input class="search-input" id="roomSearch" placeholder="Search by room, building, or equipment"><select class="filter-select" id="roomFilter"><option value="All">All statuses</option><option>Available</option><option>Maintenance</option></select></div><div class="panel"><div class="room-grid" id="roomGrid">${rooms.map(roomCard).join('')||'<div class="empty-state">No classrooms added yet.</div>'}</div></div>`;
+  }
+  function reservationsView(){
+    const list=[...visibleBookings()].sort((a,b)=>b.createdAt-a.createdAt);
+    return heading('Reservations','Track booking requests and reservation history.',currentUser.role==='admin'?'':'<button class="primary-button" data-action="new-booking">＋ New request</button>')+`<div class="toolbar"><input class="search-input" id="bookingSearch" placeholder="Search room, requester, or purpose"><select class="filter-select" id="bookingFilter"><option value="All">All statuses</option><option>Pending</option><option>Approved</option><option>Rejected</option></select></div><section class="panel"><div class="table-wrap"><table class="data-table"><thead><tr><th>Classroom / purpose</th><th>Requester</th><th>Date & time</th><th>People</th><th>Status</th><th>Actions</th></tr></thead><tbody id="bookingRows">${bookingRows(list)}</tbody></table></div></section>`;
+  }
+  function bookingRows(list){
+    if(!list.length)return '<tr><td colspan="6"><div class="empty-state"><strong>No reservations found</strong>Requests will show up here when submitted.</div></td></tr>';
+    return list.map(b=>`<tr data-booking-row="${safe(b.id)}"><td><span class="table-primary">${safe(b.roomName)}</span><span class="table-secondary">${safe(b.purpose)}</span></td><td><span class="table-primary">${safe(b.userName)}</span><span class="table-secondary">${safe(b.userEmail)}</span></td><td><span class="table-primary">${dateText(b.date)}</span><span class="table-secondary">${timeText(b.start)} – ${timeText(b.end)}</span></td><td>${b.people}</td><td>${pill(b.status)}</td><td><div class="table-actions">${currentUser.role==='admin'&&b.status==='Pending'?`<button class="small-action approve" data-booking-action="approve" data-id="${safe(b.id)}">Approve</button><button class="small-action reject" data-booking-action="reject" data-id="${safe(b.id)}">Reject</button>`:''}${currentUser.role==='admin'?`<button class="small-action delete" data-booking-action="delete" data-id="${safe(b.id)}">Delete</button>`:''}${currentUser.role!=='admin'&&b.status==='Pending'?`<span class="table-secondary">Awaiting review</span>`:''}</div></td></tr>`).join('');
+  }
+  function usersView(){
+    if(currentUser.role!=='admin')return heading('Access restricted','Only administrators can manage users.')+'<div class="panel">You do not have permission to view this page.</div>';
+    return heading('Users','People who have signed in to this prototype.')+`<div class="notice">Prototype note: anyone can choose a role on the demo sign-in screen. Role permissions must be enforced by Supabase authentication and database policies before production.</div><section class="panel"><div class="table-wrap"><table class="data-table"><thead><tr><th>User</th><th>Email</th><th>Role</th><th>First seen</th></tr></thead><tbody>${users.length?users.map(u=>`<tr><td><div class="user-card"><span class="user-initial">${safe(u.name.charAt(0).toUpperCase())}</span><span class="table-primary">${safe(u.name)}</span></div></td><td>${safe(u.email)}</td><td>${pill(roleLabel(u.role))}</td><td>${dateText(u.createdDate)}</td></tr>`).join(''):'<tr><td colspan="4"><div class="empty-state">No users recorded yet.</div></td></tr>'}</tbody></table></div></section>`;
+  }
+  function reportsView(){
+    if(currentUser.role!=='admin')return heading('Access restricted','Only administrators can view reports.');
+    const approved=bookings.filter(b=>b.status==='Approved').length,pending=bookings.filter(b=>b.status==='Pending').length,rejected=bookings.filter(b=>b.status==='Rejected').length;
+    return heading('Reports & insights','Review reservation activity and export a CSV report.', '<button class="primary-button" data-action="export">↓ Export CSV</button>')+`<div class="stats-grid"><article class="stat-card"><div class="stat-top">All requests<span class="stat-icon">▥</span></div><div class="stat-number">${bookings.length}</div><div class="stat-caption">Total reservations submitted</div></article><article class="stat-card"><div class="stat-top">Approved<span class="stat-icon">✓</span></div><div class="stat-number">${approved}</div><div class="stat-caption">Confirmed bookings</div></article><article class="stat-card"><div class="stat-top">Pending<span class="stat-icon">◷</span></div><div class="stat-number">${pending}</div><div class="stat-caption">Awaiting review</div></article><article class="stat-card"><div class="stat-top">Rejected<span class="stat-icon">×</span></div><div class="stat-number">${rejected}</div><div class="stat-caption">Requests declined</div></article></div><section class="panel"><div class="panel-heading"><h2>Reservation report</h2><button class="text-button" data-action="export">Export CSV ↓</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Classroom</th><th>Requester</th><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody>${bookings.length?bookings.map(b=>`<tr><td>${safe(b.roomName)}</td><td>${safe(b.userName)}</td><td>${dateText(b.date)}</td><td>${timeText(b.start)}–${timeText(b.end)}</td><td>${pill(b.status)}</td></tr>`).join(''):'<tr><td colspan="5"><div class="empty-state">No report data yet.</div></td></tr>'}</tbody></table></div></section>`;
+  }
+  function render(){
+    if(!currentUser)return;
+    $('#pendingBadge').textContent=bookings.filter(b=>b.status==='Pending').length;
+    const container=$('#viewContainer');
+    container.innerHTML=({dashboard:dashboardView,classrooms:classroomsView,reservations:reservationsView,users:usersView,reports:reportsView}[currentView]||dashboardView)();
+    if(currentView==='classrooms')filterRooms();
+    if(currentView==='reservations')filterBookings();
+  }
+  function filterRooms(){
+    const query=($('#roomSearch')?.value||'').toLowerCase(),status=$('#roomFilter')?.value||'All';
+    const filtered=rooms.filter(r=>(status==='All'||r.status===status)&&`${r.name} ${r.building} ${r.equipment}`.toLowerCase().includes(query));
+    $('#roomGrid').innerHTML=filtered.map(roomCard).join('')||'<div class="empty-state">No matching classrooms found.</div>';
+  }
+  function filterBookings(){
+    const query=($('#bookingSearch')?.value||'').toLowerCase(),status=$('#bookingFilter')?.value||'All';
+    const filtered=visibleBookings().filter(b=>(status==='All'||b.status===status)&&`${b.roomName} ${b.userName} ${b.purpose} ${b.userEmail}`.toLowerCase().includes(query)).sort((a,b)=>b.createdAt-a.createdAt);
+    $('#bookingRows').innerHTML=bookingRows(filtered);
+  }
+  function openRoomDialog(id=null){
+    const form=$('#classroomForm'); form.reset(); $('#classroomId').value=id||'';
+    const room=id?roomById(id):null; $('#classroomDialogTitle').textContent=room?'Edit classroom':'Add classroom';
+    if(room){$('#roomName').value=room.name;$('#roomBuilding').value=room.building;$('#roomCapacity').value=room.capacity;$('#roomEquipment').value=room.equipment;$('#roomStatus').value=room.status;}
+    $('#classroomDialog').showModal();
+  }
+  function openReservationDialog(roomId=null){
+    const available=rooms.filter(r=>r.status==='Available');
+    if(!available.length){setToast('There are no available classrooms right now.');return;}
+    $('#reservationRoom').innerHTML=available.map(r=>`<option value="${safe(r.id)}">${safe(r.name)} · ${r.capacity} seats</option>`).join('');
+    if(roomId&&available.some(r=>r.id===roomId))$('#reservationRoom').value=roomId;
+    $('#reservationDate').min=today();$('#reservationDate').value=today();$('#reservationPeople').value='20';$('#startTime').value='09:00';$('#endTime').value='10:00';$('#reservationPurpose').value='';
+    $('#reservationDialog').showModal();
+  }
+  function createBooking(e){
+    e.preventDefault();
+    const room=roomById($('#reservationRoom').value),date=$('#reservationDate').value,start=$('#startTime').value,end=$('#endTime').value,people=Number($('#reservationPeople').value),purpose=$('#reservationPurpose').value.trim();
+    if(!room||room.status!=='Available'){setToast('Please choose an available classroom.');return;}
+    if(date<today()){setToast('Please choose today or a future date.');return;}
+    if(start>=end){setToast('End time must be later than start time.');return;}
+    if(people>room.capacity){setToast(`This room has a capacity of ${room.capacity}.`);return;}
+    const conflict=bookings.some(b=>b.roomId===room.id&&b.date===date&&b.status!=='Rejected'&&start<b.end&&end>b.start);
+    if(conflict){setToast('That room has a reservation at an overlapping time.');return;}
+    bookings.push({id:uid(),roomId:room.id,roomName:room.name,userId:currentUser.id,userName:currentUser.name,userEmail:currentUser.email,role:currentUser.role,date,start,end,people,purpose,status:'Pending',createdAt:Date.now()});
+    saveAll();$('#reservationDialog').close();setView('reservations');setToast('Reservation request submitted for admin review.');
+  }
+  function exportCSV(){
+    const rows=[['Classroom','Building','Requester','Email','Role','Date','Start','End','People','Purpose','Status'],...bookings.map(b=>{const r=roomById(b.roomId);return [b.roomName,r?.building||'',b.userName,b.userEmail,roleLabel(b.role),b.date,b.start,b.end,b.people,b.purpose,b.status];})];
+    const csv=rows.map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`classroom-reservations-${today()}.csv`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);setToast('CSV report exported.');
+  }
+  $('#loginForm').addEventListener('submit',e=>{
+    e.preventDefault();const name=$('#fullName').value.trim(),email=$('#email').value.trim().toLowerCase(),role=$('#roleSelect').value;
+    if(!name||!email)return;
+    let user=users.find(u=>u.email===email&&u.role===role);
+    if(!user){user={id:uid(),name,email,role,createdDate:today()};users.push(user);}else user.name=name;
+    currentUser={...user};write(STORE.session,currentUser);saveAll();currentView='dashboard';initApp();setToast(`Welcome, ${name.split(' ')[0]}!`);
+  });
+  $('#logoutBtn').addEventListener('click',()=>{currentUser=null;localStorage.removeItem(STORE.session);$('#dashboardApp').classList.add('hidden');$('#loginScreen').classList.remove('hidden');$('#loginForm').reset();$('#sidebar').classList.remove('open');});
+  $('#menuBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));
+  $$('.nav-link[data-view]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.view==='users'&&currentUser.role!=='admin'){setToast('Only administrators can manage users.');return;}if(btn.dataset.view==='reports'&&currentUser.role!=='admin'){setToast('Only administrators can view reports.');return;}setView(btn.dataset.view);}));
+  document.addEventListener('click',e=>{
+    const action=e.target.closest('[data-action]')?.dataset.action;
+    if(action==='add-room')openRoomDialog();if(action==='new-booking')openReservationDialog();if(action==='classrooms')setView('classrooms');if(action==='reservations')setView('reservations');if(action==='export')exportCSV();
+    const bookRoom=e.target.closest('[data-book-room]');if(bookRoom)openReservationDialog(bookRoom.dataset.bookRoom);
+    const edit=e.target.closest('[data-edit-room]');if(edit)openRoomDialog(edit.dataset.editRoom);
+    const bookingAction=e.target.closest('[data-booking-action]');
+    if(bookingAction){const b=bookings.find(x=>x.id===bookingAction.dataset.id);if(!b)return;const act=bookingAction.dataset.bookingAction;
+      if(act==='approve'||act==='reject'){
+        if(act==='approve'){const conflict=bookings.some(other=>other.id!==b.id&&other.roomId===b.roomId&&other.date===b.date&&other.status==='Approved'&&b.start<other.end&&b.end>other.start);if(conflict){setToast('Cannot approve: this overlaps an approved booking.');return;}}
+        b.status=act==='approve'?'Approved':'Rejected';saveAll();render();setToast(`Reservation ${b.status.toLowerCase()}.`);
+      }else if(act==='delete'&&confirm('Delete this reservation permanently from this browser?')){bookings=bookings.filter(x=>x.id!==b.id);saveAll();render();setToast('Reservation deleted.');}
+    }
+  });
+  $('#classroomForm').addEventListener('submit',e=>{
+    e.preventDefault();const id=$('#classroomId').value,data={name:$('#roomName').value.trim(),building:$('#roomBuilding').value.trim(),capacity:Number($('#roomCapacity').value),equipment:$('#roomEquipment').value.trim(),status:$('#roomStatus').value};
+    if(id){Object.assign(roomById(id),data);setToast('Classroom updated.');}else{rooms.push({id:uid(),...data});setToast('Classroom added.');}
+    saveAll();$('#classroomDialog').close();render();
+  });
+  $('#reservationForm').addEventListener('submit',createBooking);
+  $$('.close-dialog').forEach(btn=>btn.addEventListener('click',()=>btn.closest('dialog').close()));
+  document.addEventListener('input',e=>{if(e.target.id==='roomSearch')filterRooms();if(e.target.id==='bookingSearch')filterBookings();});
+  document.addEventListener('change',e=>{if(e.target.id==='roomFilter')filterRooms();if(e.target.id==='bookingFilter')filterBookings();});
+  initApp();
+})();
