@@ -1,95 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Online Classroom Reservation System for students, faculty, and administrators.">
-  <title>ClassReserve | Classroom Reservation System</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassReserve | Online Classroom Reservation System</title>
+    <!-- Connect CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#" aria-label="ClassReserve home">
-        <span class="brand-mark">CR</span><span><strong>ClassReserve</strong><small>ROOM MANAGEMENT</small></span>
-      </a>
-      <div class="side-label">WORKSPACE</div>
-      <nav class="side-nav" aria-label="Main navigation">
-        <button class="nav-link active" data-view="dashboard"><span>▦</span> Dashboard</button>
-        <button class="nav-link" data-view="classrooms"><span>▤</span> Classrooms</button>
-        <button class="nav-link" data-view="reservations"><span>◷</span> Reservations <span id="pendingBadge" class="nav-badge">0</span></button>
-        <button class="nav-link admin-only" data-view="users"><span>♙</span> Users</button>
-        <button class="nav-link admin-only" data-view="reports"><span>▥</span> Reports</button>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="help-card"><span class="help-icon">?</span><strong>Need help?</strong><p>Manage classroom bookings in one place.</p></div>
-        <button class="nav-link" id="logoutBtn"><span>↪</span> Sign out</button>
-      </div>
-    </aside>
-
-    <main class="main-area">
-      <header class="topbar">
-        <button id="menuBtn" class="icon-button menu-button" aria-label="Toggle navigation">☰</button>
-        <div class="breadcrumb">Workspace <span>/</span> <strong id="pageCrumb">Dashboard</strong></div>
-        <div class="top-actions"><span class="today-label" id="todayLabel"></span><div class="avatar" id="topAvatar">U</div></div>
-      </header>
-
-      <section id="loginScreen" class="login-layout">
-        <div class="login-visual">
-          <div class="visual-orb orb-one"></div><div class="visual-orb orb-two"></div>
-          <div class="visual-content">
-            <span class="eyebrow light">SMART CAMPUS • SIMPLE BOOKINGS</span>
-            <h1>Your next class<br>starts <em>here.</em></h1>
-            <p>Find the right space, request a reservation, and keep every classroom organized.</p>
-            <div class="visual-stats"><div><strong>24/7</strong><span>Booking access</span></div><div><strong>3</strong><span>User roles</span></div><div><strong>1</strong><span>Easy workspace</span></div></div>
-          </div>
+    <!-- Website Header -->
+    <header class="header">
+        <div class="container">
+            <h1>ClassReserve</h1>
+            <p>Online Classroom Reservation System</p>
         </div>
-        <div class="login-panel">
-          <div class="login-mobile-brand"><span class="brand-mark">CR</span><strong>ClassReserve</strong></div>
-          <span class="eyebrow">WELCOME BACK</span><h2>Sign in to your account</h2>
-          <p class="muted">Choose your role and enter your details to continue.</p>
-          <form id="loginForm">
-            <label for="roleSelect">I am signing in as</label>
-            <select id="roleSelect" required><option value="student">Student</option><option value="faculty">Faculty</option><option value="admin">Administrator</option></select>
-            <label for="fullName">Full name</label><input id="fullName" name="fullName" placeholder="e.g. Alex Santos" autocomplete="name" required>
-            <label for="email">School email</label><input id="email" name="email" type="email" placeholder="you@school.edu" autocomplete="email" required>
-            <button class="primary-button full-button" type="submit">Continue to dashboard <span>→</span></button>
-          </form>
-          <div class="demo-note"><span>ⓘ</span><p><strong>Prototype sign-in</strong><br>This front-end demo does not verify passwords. Connect Supabase before using real accounts.</p></div>
-        </div>
-      </section>
-
-      <section id="dashboardApp" class="dashboard-app hidden">
-        <div id="viewContainer"></div>
-      </section>
-      <footer class="footer"><span>© <span id="year"></span> ClassReserve</span><span>Online Classroom Reservation System <i>•</i> Prototype</span></footer>
+    </header>
+    <main class="container">
+        <!-- Login Section -->
+        <section id="login-section" class="card">
+            <h2>Welcome to ClassReserve</h2>
+            <p>Enter your details to access the reservation dashboard.</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="role">Account Type</label>
+                    <select id="role" name="role" required>
+                        <option value="student">Student</option>
+                        <option value="faculty">Faculty</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter your full name"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="email">School Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="name@school.edu"
+                        required
+                    >
+                </div>
+                <button type="submit">Continue to Dashboard</button>
+            </form>
+        </section>
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="card" hidden>
+            <div class="dashboard-header">
+                <div>
+                    <h2 id="dashboard-title">Dashboard</h2>
+                    <p id="welcome-message"></p>
+                </div>
+                <button type="button" id="logout-button" class="secondary-button">
+                    Sign Out
+                </button>
+            </div>
+            <!-- Navigation -->
+            <nav class="navigation" aria-label="Dashboard navigation">
+                <button type="button" data-view="dashboard">
+                    Dashboard
+                </button>
+                <button type="button" data-view="rooms">
+                    Classrooms
+                </button>
+                <button type="button" data-view="reservations">
+                    Reservations
+                </button>
+            </nav>
+            <!-- Dashboard Content -->
+            <div id="dashboard-content">
+                <h3>Welcome!</h3>
+                <p>Choose an option above to manage classroom reservations.</p>
+            </div>
+        </section>
     </main>
-  </div>
-
-  <dialog id="classroomDialog" class="modal">
-    <form id="classroomForm" method="dialog">
-      <div class="modal-heading"><div><span class="eyebrow">ROOM DETAILS</span><h2 id="classroomDialogTitle">Add classroom</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">×</button></div>
-      <input type="hidden" id="classroomId">
-      <label for="roomName">Classroom name</label><input id="roomName" required placeholder="e.g. Science Lab 2">
-      <div class="form-grid"><div><label for="roomBuilding">Building</label><input id="roomBuilding" required placeholder="Main Building"></div><div><label for="roomCapacity">Capacity</label><input id="roomCapacity" type="number" min="1" required placeholder="40"></div></div>
-      <label for="roomEquipment">Equipment / facilities</label><input id="roomEquipment" placeholder="Projector, whiteboard">
-      <label for="roomStatus">Availability</label><select id="roomStatus"><option value="Available">Available</option><option value="Maintenance">Maintenance</option></select>
-      <div class="modal-actions"><button type="button" class="secondary-button close-dialog">Cancel</button><button class="primary-button" type="submit">Save classroom</button></div>
-    </form>
-  </dialog>
-
-  <dialog id="reservationDialog" class="modal">
-    <form id="reservationForm" method="dialog">
-      <div class="modal-heading"><div><span class="eyebrow">NEW BOOKING</span><h2>Request a classroom</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close">×</button></div>
-      <label for="reservationRoom">Classroom</label><select id="reservationRoom" required></select>
-      <div class="form-grid"><div><label for="reservationDate">Date</label><input id="reservationDate" type="date" required></div><div><label for="reservationPeople">People</label><input id="reservationPeople" type="number" min="1" value="20" required></div></div>
-      <div class="form-grid"><div><label for="startTime">Start time</label><input id="startTime" type="time" value="09:00" required></div><div><label for="endTime">End time</label><input id="endTime" type="time" value="10:00" required></div></div>
-      <label for="reservationPurpose">Purpose</label><textarea id="reservationPurpose" rows="3" required placeholder="Briefly explain the class or activity"></textarea>
-      <div class="modal-actions"><button type="button" class="secondary-button close-dialog">Cancel</button><button class="primary-button" type="submit">Submit request</button></div>
-    </form>
-  </dialog>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <!-- Website Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 ClassReserve. Online Classroom Reservation System.</p>
+    </footer>
+    <!-- Connect JavaScript -->
+    <script src="script.js"></script>
 </body>
 </html>
-
