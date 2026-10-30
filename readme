@@ -1,0 +1,23 @@
+ClassReserve
+Static HTML/CSS/JavaScript frontend using Supabase Auth and Postgres.
+Files
+`index.html`, `style.css`, `script.js`: website
+`supabase-config.js`: browser-safe Supabase Project URL and Publishable key only
+`SETUP-SUPABASE.sql`: database migration for reservation ownership, role-based access, and automatic status history
+Required setup
+In `supabase-config.js`, set `CLASSRESERVE_SUPABASE_URL` to the Supabase Project URL (for example `https://PROJECT_REF.supabase.co`, without `/rest/v1/`).
+Set `CLASSRESERVE_SUPABASE_PUBLISHABLE_KEY` to the `sb_publishable_...` key. Never put an `sb_secret_...` or service-role key in browser code.
+In Supabase SQL Editor, inspect existing `profiles` and `reservations` columns, then run `SETUP-SUPABASE.sql`. This expects `profiles.id` to match the Auth user UUID and `profiles.role` values `Student`, `Faculty`, or `Admin`.
+In Supabase Authentication → URL Configuration, set the Site URL to your deployed website URL and add that same URL to Redirect URLs. Password reset emails require this configuration and an enabled email provider.
+Commit the updated files to GitHub; Vercel should redeploy automatically.
+Account setup
+Each user must exist in Supabase Authentication and have a matching `public.profiles` row with the same UUID. The frontend does not create accounts or assign roles. Only an administrator should create or change Admin profiles.
+Features
+Supabase email/password login
+Forgot-password email and password update flow
+Student/Faculty room requests and personal request status
+Admin request queue with Approve/Reject actions
+Database trigger automatically records each new request and every status change in `reservation_history`
+Color-coded navigation and request statuses
+Important
+Before running the SQL migration on a live database, make a backup and confirm the existing schema. If existing reservation rows do not have `user_id` populated, those old rows will not appear in users' personal lists. Test with non-sensitive sample requests first.
