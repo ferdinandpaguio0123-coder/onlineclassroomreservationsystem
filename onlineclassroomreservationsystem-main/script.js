@@ -372,7 +372,6 @@ async function renderRooms() {
                 <th>ID</th>
                 <th>Building</th>
                 <th>Status</th>
-                <th>Admin Actions</th>
               </tr>
             </thead>
 
@@ -382,10 +381,6 @@ async function renderRooms() {
                   <td>${escapeHTML(b.id)}</td>
                   <td>${escapeHTML(buildingName(b))}</td>
                   <td>${escapeHTML(b.status || "Active")}</td>
-                  <td>
-                    <button type="button" class="btn btn-primary btn-small" data-edit-building="${escapeHTML(b.id)}">Edit</button>
-                    <button type="button" class="btn btn-small" data-toggle-building="${escapeHTML(b.id)}">${b.status === "Archived" ? "Restore" : "Archive"}</button>
-                  </td>
                 </tr>
               `).join("")}
             </tbody>
@@ -438,10 +433,9 @@ async function renderRooms() {
     );
 
     const filtered = rooms.filter((room) => {
-      const building = buildings.find((b) => String(b.id) === String(room.building_id));
       return (
-        (isAdmin() || (room.status === "Available" && building?.status === "Active")) &&
-        (!buildingFilter || String(room.building_id) === buildingFilter) &&
+        (!buildingFilter ||
+          String(room.building_id) === buildingFilter) &&
         Number(room.capacity) >= capacityFilter
       );
     });
@@ -490,7 +484,6 @@ async function renderRooms() {
               Manage Status
             </button>
 
-            <button type="button" class="btn btn-small" data-toggle-room="${escapeHTML(room.id)}">${room.status === "Archived" ? "Restore" : "Archive"}</button>
           </div>
         ` : ""}
 
@@ -506,27 +499,6 @@ async function renderRooms() {
   $("filter-capacity")?.addEventListener("input", drawRooms);
 
   function attachRoomActions() {
-    document.querySelectorAll("[data-toggle-room]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const room = rooms.find((r) => String(r.id) === button.dataset.toggleRoom);
-        if (!room) return;
-        const archived = room.status === "Archived";
-        if (!confirm(`${archived ? "Restore" : "Archive"} ${roomName(room)}?`)) return;
-        button.disabled = true;
-        try {
-          const { data, error } = await supabase.from("classrooms")
-            .update({ status: archived ? "Available" : "Archived" })
-            .eq("id", room.id).select("id");
-          if (error) throw error;
-          if (!data?.length) throw new Error("Room update was not permitted.");
-          await navigate("rooms");
-          message(`Room ${archived ? "restored" : "archived"} successfully.`);
-        } catch (error) {
-          message(error.message, true);
-          if (button.isConnected) button.disabled = false;
-        }
-      });
-    });
 
     // EDIT CLASSROOM
     document.querySelectorAll("[data-edit-room]").forEach((button) => {
@@ -571,7 +543,7 @@ async function renderRooms() {
           capacity < 1 ||
           capacity > 10000 ||
           !buildings.some(
-            (b) => Number(b.id) === building_id && b.status === "Active"
+            (b) => Number(b.id) === building_id
           )
         ) {
           message("Invalid classroom details.", true);
@@ -609,10 +581,6 @@ async function renderRooms() {
         );
 
         if (!room) return;
-        if (room.status === "Archived") {
-          message("Restore this room using the Restore button first.", true);
-          return;
-        }
 
         const newStatus = prompt(
           "Enter classroom status:\n\n" +
@@ -678,58 +646,6 @@ async function renderRooms() {
 
   if (!isAdmin()) return;
 
-  document.querySelectorAll("[data-edit-building]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const building = buildings.find((b) => String(b.id) === button.dataset.editBuilding);
-      if (!building) return;
-      const name = prompt("Building name:", building.building_name);
-      if (name === null) return;
-      const cleanedName = name.trim();
-      if (!cleanedName || cleanedName.length > 100) return message("Building name must be 1–100 characters.", true);
-      const description = prompt("Building description:", building.description || "");
-      if (description === null) return;
-      if (description.length > 300) return message("Description must be at most 300 characters.", true);
-      button.disabled = true;
-      try {
-        const { data, error } = await supabase.from("buildings")
-          .update({ building_name: cleanedName, description: description.trim() || null })
-          .eq("id", building.id).select("id");
-        if (error) throw error;
-        if (!data?.length) throw new Error("Building edit was not permitted.");
-        await navigate("rooms");
-        message("Building updated successfully.");
-      } catch (error) {
-        message(error.message, true);
-        if (button.isConnected) button.disabled = false;
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-toggle-building]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const building = buildings.find((b) => String(b.id) === button.dataset.toggleBuilding);
-      if (!building) return;
-      const archived = building.status === "Archived";
-      const explanation = archived
-        ? "Rooms will stay archived until you restore them individually."
-        : "All rooms in this building will also be archived.";
-      if (!confirm(`${archived ? "Restore" : "Archive"} ${buildingName(building)}?\n\n${explanation}`)) return;
-      button.disabled = true;
-      try {
-        const { data, error } = await supabase.from("buildings")
-          .update({ status: archived ? "Active" : "Archived" })
-          .eq("id", building.id).select("id");
-        if (error) throw error;
-        if (!data?.length) throw new Error("Building update was not permitted.");
-        await navigate("rooms");
-        message(`Building ${archived ? "restored" : "archived"} successfully.`);
-      } catch (error) {
-        message(error.message, true);
-        if (button.isConnected) button.disabled = false;
-      }
-    });
-  });
-
   // ADD BUILDING
   $("add-building-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -776,7 +692,7 @@ async function renderRooms() {
     if (
       !classroom_name ||
       !buildings.some(
-        (b) => Number(b.id) === building_id && b.status === "Active"
+        (b) => Number(b.id) === building_id
       ) ||
       !Number.isInteger(capacity) ||
       capacity < 1 ||
@@ -798,7 +714,6 @@ async function renderRooms() {
           classroom_name,
           building_id,
           capacity,
-
           room_type: $("room-type").value,
           status: "Available"
         });
@@ -1574,10 +1489,9 @@ async function renderReservations() {
     getBuildings()
   ]);
 
-  const activeRooms = rooms.filter((room) => {
-    const building = buildings.find((b) => String(b.id) === String(room.building_id));
-    return roomStatus(room) === "available" && building?.status === "Active";
-  });
+  const activeRooms = rooms.filter(
+    (room) => roomStatus(room) === "available"
+  );
 
   $("dashboard-content").innerHTML = `
     <div class="section-header">
@@ -1596,10 +1510,9 @@ async function renderReservations() {
             <select id="booking-building" required>
               <option value="">Select Building</option>
 
-              ${buildings.filter((building) => building.status === "Active").map((building) => `
+              ${buildings.map((building) => `
                 <option value="${escapeHTML(building.id)}">
                   ${escapeHTML(buildingName(building))}
-
                 </option>
               `).join("")}
 
@@ -1755,12 +1668,12 @@ async function renderReservations() {
   );
 
   setupAvailabilityChecker(
-    isAdmin() ? rooms : activeRooms,
+    rooms,
     buildings
   );
 
   setupCalendar(
-    isAdmin() ? rooms : activeRooms,
+    rooms,
     buildings
   );
 }
@@ -1838,12 +1751,9 @@ async function submitReservation(event) {
     }
 
     if (roomStatus(room) !== "available") {
-      throw new Error("This classroom is currently unavailable or under maintenance.");
-    }
-    const buildings = await getBuildings();
-    const building = buildings.find((b) => String(b.id) === String(room.building_id));
-    if (building?.status !== "Active") {
-      throw new Error("This building is not active.");
+      throw new Error(
+        "This classroom is currently unavailable or under maintenance."
+      );
     }
 
     // Check availability through the secure Supabase RPC.
@@ -2881,4 +2791,4 @@ if (document.readyState === "loading") {
 
 /* =============================================
    END OF CLASSRESERVE SCRIPT.JS
-*/
+   ============================================= */
