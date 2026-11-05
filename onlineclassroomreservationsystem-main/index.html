@@ -1,49 +1,228 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClassReserve | Classroom Reservation System</title>
+
+  <title>ClassReserve | Online Classroom Reservation System</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header class="site-header"><div class="container"><div><h1>ClassReserve</h1><p>Online Classroom Reservation System</p></div></div></header>
-  <main class="container">
-    <section id="login-section" class="card auth-card">
-      <h2>Login to ClassReserve</h2>
-      <p>Sign in with the email and password registered for your account.</p>
-      <form id="login-form">
-        <label for="email">Email address</label><input type="email" id="email" placeholder="you@example.com" autocomplete="username" required>
-        <label for="password">Password</label><input type="password" id="password" placeholder="Your password" autocomplete="current-password" required>
-        <p id="login-error" class="message error" role="alert" hidden></p>
-        <button id="login-button" class="primary-button" type="submit">Log In</button>
-      </form>
-      <button id="forgot-password-button" class="link-button" type="button">Forgot Password?</button>
-      <form id="reset-password-form" hidden>
-        <h3>Reset your password</h3><p>Enter your account email. Supabase will send you a password-reset link.</p>
-        <label for="reset-email">Email address</label><input type="email" id="reset-email" required>
-        <button class="primary-button" type="submit">Send reset email</button>
-      </form>
-      <form id="new-password-form" hidden>
-        <h3>Choose a new password</h3><label for="new-password">New password</label><input type="password" id="new-password" minlength="8" required>
-        <button class="primary-button" type="submit">Save new password</button>
-      </form>
-    </section>
 
-    <section id="dashboard-section" class="card" hidden>
-      <div class="dashboard-header"><div><h2 id="dashboard-title">Dashboard</h2><p id="welcome-message"></p></div><button id="logout-button" class="logout-button" type="button">Log Out</button></div>
-      <nav class="navigation" aria-label="Main navigation">
-        <button type="button" data-view="dashboard" class="nav-dashboard">Dashboard</button>
-        <button type="button" data-view="rooms" class="nav-rooms">Classrooms</button>
-        <button type="button" data-view="reservations" class="nav-reservations">Reservations / Requests</button>
-        <button type="button" data-view="history" class="nav-history">Request History</button>
-      </nav>
-      <p id="app-message" class="message" role="status" aria-live="polite"></p>
-      <div id="dashboard-content" aria-live="polite"></div>
-    </section>
-  </main>
-  <footer><p>© 2026 ClassReserve | Online Classroom Reservation System</p></footer>
+<body>
+
+  <!-- LOGIN PAGE -->
+  <section id="login-section" class="login-page">
+
+    <div class="login-card">
+
+      <h1>ClassReserve</h1>
+      <p class="login-subtitle">
+        Online Classroom Reservation System
+      </p>
+
+      <form id="login-form">
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+            autocomplete="email"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button
+          type="submit"
+          id="login-button"
+          class="btn btn-primary"
+        >
+          Log In
+        </button>
+
+        <p id="login-error" hidden></p>
+
+      </form>
+
+      <button
+        type="button"
+        id="forgot-password-button"
+        class="btn btn-outline"
+        style="margin-top: 15px; width: 100%;"
+      >
+        Forgot Password?
+      </button>
+
+      <form
+        id="reset-password-form"
+        class="hidden"
+        style="margin-top: 20px;"
+      >
+        <h3>Reset Password</h3>
+
+        <div class="form-group">
+          <label for="reset-email">Email Address</label>
+          <input
+            type="email"
+            id="reset-email"
+            placeholder="Enter your registered email"
+            required
+          >
+        </div>
+
+        <button type="submit">
+          Send Reset Link
+        </button>
+      </form>
+
+      <form
+        id="new-password-form"
+        class="hidden"
+        style="margin-top: 20px;"
+      >
+        <h3>Set New Password</h3>
+
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <input
+            type="password"
+            id="new-password"
+            minlength="6"
+            required
+          >
+        </div>
+
+        <button type="submit">
+          Update Password
+        </button>
+      </form>
+
+    </div>
+  </section>
+
+
+  <!-- MAIN DASHBOARD -->
+  <section id="dashboard-section" class="hidden">
+
+    <div class="dashboard-layout">
+
+      <!-- SIDEBAR -->
+      <aside class="dashboard-sidebar">
+
+        <div class="sidebar-brand">
+          <h2>ClassReserve</h2>
+          <p>Classroom Management System</p>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+
+          <button
+            type="button"
+            class="active"
+            data-view="dashboard"
+          >
+            Dashboard
+          </button>
+
+          <button
+            type="button"
+            data-view="rooms"
+          >
+            Classrooms
+          </button>
+
+          <button
+            type="button"
+            data-view="reservations"
+          >
+            Reservations / Requests
+          </button>
+
+          <button
+            type="button"
+            data-view="history"
+          >
+            Request History
+          </button>
+
+        </nav>
+
+        <div class="sidebar-footer">
+          <button type="button" id="logout-button">
+            Log Out
+          </button>
+        </div>
+
+      </aside>
+
+
+      <!-- DASHBOARD CONTENT -->
+      <main class="dashboard-main">
+
+        <header class="dashboard-header">
+
+          <div>
+            <h1 id="dashboard-title">
+              ClassReserve Dashboard
+            </h1>
+
+            <p id="welcome-message">
+              Welcome to ClassReserve
+            </p>
+          </div>
+
+          <div class="header-actions">
+            <span class="role-badge">
+              Classroom Reservation System
+            </span>
+          </div>
+
+        </header>
+
+        <!-- NOTIFICATIONS -->
+        <div id="app-message" hidden></div>
+
+        <!-- DYNAMIC CONTENT -->
+        <div id="dashboard-content">
+
+          <div class="loading">
+            Loading dashboard...
+          </div>
+
+        </div>
+
+        <footer class="app-footer">
+          ClassReserve &copy; 2026
+          | Online Classroom Reservation System
+        </footer>
+
+      </main>
+
+    </div>
+
+  </section>
+
+
+  <!-- SUPABASE CONFIGURATION -->
   <script src="supabase-config.js"></script>
+
+  <!-- MAIN JAVASCRIPT -->
   <script type="module" src="script.js"></script>
+
 </body>
 </html>
+
