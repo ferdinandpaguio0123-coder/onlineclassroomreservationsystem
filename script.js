@@ -598,7 +598,6 @@ async function renderRooms() {
 
         await navigate("rooms");
         message("Classroom updated successfully.");
-
       });
     });
 
@@ -799,6 +798,7 @@ async function renderRooms() {
           classroom_name,
           building_id,
           capacity,
+
           room_type: $("room-type").value,
           status: "Available"
         });
@@ -1499,7 +1499,6 @@ function setupCalendar(rooms, buildings) {
 
             <p>
               <strong>Room Status:</strong>
-
               ${badge(room.status || "Available")}
             </p>
 
@@ -1600,6 +1599,7 @@ async function renderReservations() {
               ${buildings.filter((building) => building.status === "Active").map((building) => `
                 <option value="${escapeHTML(building.id)}">
                   ${escapeHTML(buildingName(building))}
+
                 </option>
               `).join("")}
 
@@ -1800,7 +1800,6 @@ async function submitReservation(event) {
   if (start_time >= end_time) {
     return message(
       "End time must be later than start time.",
-
       true
     );
   }
@@ -2101,307 +2100,306 @@ function notificationList(items) {
           </button>
         ` : ""}
 
+      </div>
 
-      true
-    );
-  }
-
-  if (
-    purpose.length < 3 ||
-    purpose.length > 500
-  ) {
-    return message(
-      "Reservation purpose must contain 3–500 characters.",
-      true
-    );
-  }
-
-  if (reservation_date < localToday()) {
-    return message(
-      "Select today or a future date.",
-      true
-    );
-  }
-
-  const button = event.submitter;
-
-  if (button) button.disabled = true;
-
-  try {
-    const rooms = await getRooms();
-
-    const room = roomById(
-      rooms,
-      classroomId
-    );
-
-    if (!room) {
-      throw new Error("Selected classroom does not exist.");
-    }
-
-    if (roomStatus(room) !== "available") {
-      throw new Error("This classroom is currently unavailable or under maintenance.");
-    }
-    const buildings = await getBuildings();
-    const building = buildings.find((b) => String(b.id) === String(room.building_id));
-    if (building?.status !== "Active") {
-      throw new Error("This building is not active.");
-    }
-
-    // Check availability through the secure Supabase RPC.
-    const available = await checkAvailability(
-      classroomId,
-      reservation_date,
-      start_time,
-      end_time
-    );
-
-    if (!available) {
-      throw new Error(
-        "This classroom is already booked during the selected time."
-      );
-    }
-
-    const { error } = await supabase
-      .from("reservations")
-      .insert({
-        user_id: currentUser.id,
-
-        username:
-          currentProfile?.username ||
-          currentProfile?.full_name ||
-          currentUser.email,
-
-        role: currentProfile?.role || "Student",
-
-        classroom_id: Number(classroomId),
-
-        // Keep the existing classroom text column
-        // for compatibility with older reservations.
-        classroom: roomName(room),
-
-        reservation_date,
-
-        reservation_time:
-          `${start_time} - ${end_time}`,
-
-        start_time,
-        end_time,
-        purpose,
-
-        status: "Pending"
-      });
-
-    if (error) throw error;
-
-    await navigate("reservations");
-
-    message(
-      "Reservation submitted successfully. Waiting for Admin approval."
-    );
-
-  } catch (error) {
-    message(
-      error.message || "Unable to submit reservation.",
-      true
-    );
-  } finally {
-    if (button?.isConnected) {
-      button.disabled = false;
-    }
-  }
+    </div>
+  `).join("");
 }
 
 /* =============================================
-   NOTIFICATION BELL
+   NOTIFICATIONS PAGE
    ============================================= */
 
-function ensureNotificationBell() {
-  if ($("notification-bell")) return;
+async function renderNotifications() {
+  const [notifications, reservations, rooms, buildings] =
+    await Promise.all([
+      getNotifications(),
+      getReservations(),
+      getRooms(),
+      getBuildings()
+    ]);
 
-  const dashboardTitle = $("dashboard-title");
-  const welcomeMessage = $("welcome-message");
+  const unreadCount = notifications.filter(
+    (item) => !item.is_read
+  ).length;
 
-  const container =
-    dashboardTitle?.parentElement ||
-    welcomeMessage?.parentElement;
+  $("dashboard-content").innerHTML = `
+    <div class="section-header">
+      <h2>Notifications</h2>
+    </div>
 
-  if (!container) return;
-
-  const bell = document.createElement("button");
-
-  bell.type = "button";
-  bell.id = "notification-bell";
-  bell.className = "btn btn-small";
-
-  bell.setAttribute(
-    "aria-label",
-    "View notifications"
-  );
-
-  bell.style.cssText = `
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 8px;
-    padding: 10px 14px;
-    cursor: pointer;
-  `;
-
-  bell.innerHTML = `
-    <span style="font-size:20px;">🔔</span>
-
-    <span
-      id="notification-count"
-      style="
-        display:none;
-        min-width:20px;
-        height:20px;
-        padding:0 5px;
-        border-radius:999px;
-        background:#dc2626;
-        color:white;
-        font-size:12px;
-        font-weight:bold;
-        align-items:center;
-        justify-content:center;
-      "
-    >
-      0
-    </span>
-  `;
-
-  bell.addEventListener("click", () => {
-    navigate("notifications");
-  });
-
-  container.appendChild(bell);
-}
-
-/* =============================================
-   UPDATE UNREAD NOTIFICATION COUNT
-   ============================================= */
-
-async function updateNotificationBell() {
-  const counter = $("notification-count");
-
-  if (!counter || !currentUser) return;
-
-  try {
-    const { count, error } = await supabase
-      .from("reservation_notifications")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
-      .eq("user_id", currentUser.id)
-      .eq("is_read", false);
-
-    if (error) throw error;
-
-    const unread = count || 0;
-
-    counter.textContent =
-      unread > 99 ? "99+" : String(unread);
-
-    counter.style.display =
-      unread > 0 ? "inline-flex" : "none";
-
-  } catch (error) {
-    console.error(
-      "Unable to update notification bell:",
-      error
-    );
-  }
-}
-
-/* =============================================
-   NOTIFICATION LIST
-   ============================================= */
-
-function notificationList(items) {
-  if (!items.length) {
-    return "<p>No notifications yet.</p>";
-  }
-
-  return items.map((item) => `
-    <div
-      class="classroom-card"
-      style="
-        margin-bottom:12px;
-        border-left:4px solid ${
-          item.is_read ? "#94a3b8" : "#2563eb"
-        };
-      "
-    >
+    <div class="content-section">
 
       <div style="
         display:flex;
-        align-items:center;
         justify-content:space-between;
-        gap:12px;
+        align-items:center;
         flex-wrap:wrap;
+        gap:12px;
+        margin-bottom:18px;
       ">
 
-        <h3>${escapeHTML(item.title || "Notification")}</h3>
+        <div>
+          <h3>My Notifications</h3>
 
-        ${!item.is_read ? `
-          <span style="
-            color:#2563eb;
-            font-size:12px;
-            font-weight:bold;
-          ">
-            NEW
-          </span>
+          <p>
+            ${unreadCount}
+            unread notification${unreadCount === 1 ? "" : "s"}
+          </p>
+        </div>
+
+        ${unreadCount > 0 ? `
+          <button
+            type="button"
+            id="mark-all-notifications-read"
+            class="btn btn-primary btn-small"
+          >
+            Mark All as Read
+          </button>
         ` : ""}
 
       </div>
 
-      <p style="margin-top:10px;">
-        ${escapeHTML(item.message || "")}
+      ${notificationList(notifications)}
+
+    </div>
+  `;
+
+  /* =============================================
+     MARK ONE NOTIFICATION AS READ
+     ============================================= */
+
+  document.querySelectorAll(
+    "[data-read-notification]"
+  ).forEach((button) => {
+
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+
+      try {
+        const { data, error } = await supabase
+          .from("reservation_notifications")
+          .update({
+            is_read: true
+          })
+          .eq("id", button.dataset.readNotification)
+          .eq("user_id", currentUser.id)
+          .select("id");
+
+        if (error) throw error;
+
+        if (!data?.length) {
+          throw new Error(
+            "Notification could not be updated."
+          );
+        }
+
+        await updateNotificationBell();
+        await navigate("notifications");
+
+      } catch (error) {
+        message(error.message, true);
+
+        if (button.isConnected) {
+          button.disabled = false;
+        }
+      }
+    });
+
+  });
+
+  /* =============================================
+     MARK ALL NOTIFICATIONS AS READ
+     ============================================= */
+
+  $("mark-all-notifications-read")?.addEventListener(
+    "click",
+    async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+
+      try {
+        const { error } = await supabase
+          .from("reservation_notifications")
+          .update({
+            is_read: true
+          })
+          .eq("user_id", currentUser.id)
+          .eq("is_read", false);
+
+        if (error) throw error;
+
+        await updateNotificationBell();
+        await navigate("notifications");
+
+        message("All notifications marked as read.");
+
+      } catch (error) {
+        message(error.message, true);
+
+        if (button.isConnected) {
+          button.disabled = false;
+        }
+      }
+    }
+  );
+
+  /* =============================================
+     OPEN RESERVATION FROM NOTIFICATION
+     ============================================= */
+
+  document.querySelectorAll(
+    "[data-notification-reservation]"
+  ).forEach((button) => {
+
+    button.addEventListener("click", () => {
+      const reservation = reservations.find(
+        (item) =>
+          String(item.id) ===
+          String(button.dataset.notificationReservation)
+      );
+
+      if (!reservation) {
+        message(
+          "Reservation details are unavailable.",
+          true
+        );
+        return;
+      }
+
+      showReservationDetails(
+        reservation,
+        rooms,
+        buildings
+      );
+    });
+
+  });
+
+  await updateNotificationBell();
+}
+
+/* =============================================
+   REQUEST HISTORY
+   ============================================= */
+
+async function renderHistory() {
+  const [reservations, rooms, buildings] =
+    await Promise.all([
+      getReservations(),
+      getRooms(),
+      getBuildings()
+    ]);
+
+  $("dashboard-content").innerHTML = `
+    <div class="section-header">
+      <h2>Request History</h2>
+    </div>
+
+    <div class="content-section">
+
+      <h3>Reservation Records</h3>
+
+      <p style="margin-bottom:16px;">
+        View your reservation requests and their
+        current approval status.
       </p>
 
-      <small>
-        ${escapeHTML(
-          item.created_at
-            ? new Date(item.created_at).toLocaleString()
-            : ""
-        )}
-      </small>
+      ${reservationTable(reservations)}
 
-      <div style="
-        display:flex;
-        gap:8px;
-        margin-top:14px;
-        flex-wrap:wrap;
-      ">
+    </div>
+  `;
 
-        ${!item.is_read ? `
-          <button
-            type="button"
-            class="btn btn-primary btn-small"
-            data-read-notification="${escapeHTML(item.id)}"
-          >
-            Mark as Read
-          </button>
-        ` : `
-          <span style="font-size:13px;opacity:0.7;">
-            Read
-          </span>
-        `}
+  // Allow users to view complete reservation details.
+  attachReservationActions(
+    reservations,
+    rooms,
+    buildings
+  );
+}
 
-        ${item.reservation_id ? `
-          <button
-            type="button"
-            class="btn btn-small"
-            data-notification-reservation="${escapeHTML(item.reservation_id)}"
-          >
-            View Reservation
-          </button>
-        ` : ""}
+/* =============================================
+   CLASSRESERVE - PART 6 OF 6
+   NAVIGATION, AUTHENTICATION AND STARTUP
+   ============================================= */
 
+let notificationChannel = null;
+let navigationRequestId = 0;
+
+/* =============================================
+   SIDEBAR NAVIGATION
+   ============================================= */
+
+function setupNavigation() {
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    if (button.dataset.classreserveBound === "true") return;
+
+    button.dataset.classreserveBound = "true";
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+
+      const view = button.dataset.view;
+
+      if (view) {
+        navigate(view);
+      }
+    });
+  });
+}
+
+/* =============================================
+   NAVIGATION
+   ============================================= */
+
+async function navigate(view = "dashboard") {
+  if (!currentUser) {
+    showLogin();
+    return;
+  }
+
+  const validViews = [
+    "dashboard",
+    "rooms",
+    "reservations",
+    "history",
+    "notifications"
+  ];
+
+  if (!validViews.includes(view)) {
+    view = "dashboard";
+  }
+
+  currentView = view;
+
+  const requestId = ++navigationRequestId;
+
+  const content = $("dashboard-content");
+
+  if (!content) {
+    console.error("Dashboard content element not found.");
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="content-section">
+      <p>Loading...</p>
+    </div>
+  `;
+
+  message("");
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    const active = button.dataset.view === view;
+
+    button.classList.toggle("active", active);
+
+    if (active) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
 
   const titles = {
     dashboard: "Dashboard",
