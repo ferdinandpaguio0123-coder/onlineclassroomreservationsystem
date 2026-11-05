@@ -1,109 +1,665 @@
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const $ = (id) => document.getElementById(id);
+
+const loginSection = $("login-section");
+const dashboardSection = $("dashboard-section");
+const loginForm = $("login-form");
+const loginButton = $("login-button");
+const loginError = $("login-error");
+const dashboardContent = $("dashboard-content");
+const appMessage = $("app-message");
+
+let supabase = null;
+let currentUser = null;
+let currentProfile = null;
+let currentView = "dashboard";
 
 const URL = window.CLASSRESERVE_SUPABASE_URL;
 const KEY = window.CLASSRESERVE_SUPABASE_PUBLISHABLE_KEY;
-const $ = (id) => document.getElementById(id);
-const loginSection = $("login-section"), dashboardSection = $("dashboard-section");
-const loginForm = $("login-form"), loginError = $("login-error"), loginButton = $("login-button");
-const resetForm = $("reset-password-form"), newPasswordForm = $("new-password-form");
-const dashboardContent = $("dashboard-content"), appMessage = $("app-message");
-let supabase, currentUser = null, currentProfile = null;
 
-if (!URL || !KEY || URL.includes("PASTE_") || KEY.includes("PASTE_") || !URL.startsWith("https://") || !KEY.startsWith("sb_publishable_")) {
-  loginError.textContent = "Supabase setup is incomplete. Check the Project URL and sb_publishable_ key in supabase-config.js.";
-  loginError.hidden = false; loginButton.disabled = true;
-} else {
-  supabase = createClient(URL, KEY);
-  initialize();
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
 
-async function initialize() {
-  loginForm.addEventListener("submit", signIn);
-  $("forgot-password-button").addEventListener("click", () => { resetForm.hidden = !resetForm.hidden; $("reset-email").value = $("email").value.trim(); });
-  resetForm.addEventListener("submit", sendResetEmail);
-  newPasswordForm.addEventListener("submit", saveNewPassword);
-  $("logout-button").addEventListener("click", signOut);
-  document.querySelectorAll("[data-view]").forEach(btn => btn.addEventListener("click", () => renderView(btn.dataset.view)));
-  supabase.auth.onAuthStateChange(async (event) => { if (event === "PASSWORD_RECOVERY") { loginSection.hidden = false; dashboardSection.hidden = true; newPasswordForm.hidden = false; loginForm.hidden = true; resetForm.hidden = true; } });
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) await loadProfile(session.user);
+function showLoginError(message) {
+  loginError.textContent = message;
+  loginError.hidden = !message;
 }
 
-async function signIn(event) {
-  event.preventDefault(); clearLoginError(); loginButton.disabled = true; loginButton.textContent = "Signing in…";
-  const { data, error } = await supabase.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
-  if (error) showLoginError("Login failed. Please check your email and password.");
-  else await loadProfile(data.user);
-  loginButton.disabled = false; loginButton.textContent = "Log In";
+function showMessage(message, error = false) {
+  appMessage.textContent = message;
+  appMessage.className = error
+    ? "message error"
+    : "message success";
 }
+
+function clearMessage() {
+  showMessage("");
+}
+
+function isAdmin() {
+  return currentProfile?.role?.toLowerCase() === "admin";
+}
+
+function roleName() {
+  return currentProfile?.role?.toLowerCase() || "student";
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const parts = String(value).split("-");
+  if (parts.length !== 3) return value;
+  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+}
+
+function statusBadge(status) {
+  const value = String(status || "Pending");
+  const normalized = value.toLowerCase();
+  const className = ["pending", "approved", "rejected"]
+    .includes(normalized) ? normalized : "pending";
+
+  return `<span class="status status-${className}">
+    ${escapeHTML(value)}
+  </span>`;
+}
+
+function renderTable(headers, rows) {
+  if (!rows.length) {
+    return `<p class="muted">No records found.</p>`;
+  }
+
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>${headers.map((h) =>
+            `<th>${escapeHTML(h)}</th>`).join("")}</tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function initializeSupabase() {
+  if (
+    typeof URL !== "string" ||
+    !URL.startsWith("https://") ||
+    typeof KEY !== "string" ||
+    !KEY.startsWith("sb_publishable_")
+  ) {
+    showLoginError(
+      "Supabase setup is incomplete. Check the Project URL and sb_publishable_ key in supabase-config.js."
+    );
+    loginButton.disabled = true;
+    return false;
+  }
+
+  try {
+    supabase = createClient(URL, KEY);
+    loginButton.disabled = false;
+    return true;
+  } catch (error) {
+    showLoginError("Unable to initialize Supabase: " + error.message);
+    loginButton.disabled = true;
+    return false;
+  }
+}
+
 async function loadProfile(user) {
-  const { data, error } = await supabase.from("profiles").select("id, username, role").eq("id", user.id).single();
-  if (error || !data) { await supabase.auth.signOut(); showLoginError("Your login is valid, but your ClassReserve profile is missing. Please ask the administrator to check the profiles table."); return; }
-  currentUser = user; currentProfile = data; loginSection.hidden = true; dashboardSection.hidden = false;
-  $("dashboard-title").textContent = `${data.role} Dashboard`;
-  $("welcome-message").textContent = `Welcome, ${data.username}. You are signed in as ${data.role}.`;
-  renderView("dashboard");
-}
-async function signOut() { await supabase.auth.signOut(); currentUser = currentProfile = null; dashboardSection.hidden = true; loginSection.hidden = false; loginForm.hidden = false; newPasswordForm.hidden = true; loginForm.reset(); }
-async function sendResetEmail(event) {
-  event.preventDefault(); const email = $("reset-email").value.trim();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-  setMessage(error ? error.message : "If this email belongs to an account, Supabase will send a password-reset link. Check your inbox and spam folder.", !!error);
-}
-async function saveNewPassword(event) {
-  event.preventDefault(); const password = $("new-password").value;
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) setMessage(error.message, true);
-  else { setMessage("Your password has been updated. You can now sign in with it."); newPasswordForm.hidden = true; loginForm.hidden = false; }
-}
-function showLoginError(msg) { loginError.textContent = msg; loginError.hidden = false; }
-function clearLoginError() { loginError.textContent = ""; loginError.hidden = true; }
-function setMessage(msg, error = false) { appMessage.textContent = msg; appMessage.className = `message ${error ? "error" : "success"}`; }
-function escapeHTML(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function isAdmin() { return String(currentProfile?.role || "").toLowerCase() === "admin"; }
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, role")
+    .eq("id", user.id)
+    .single();
 
-async function renderView(view) {
-  if (!currentUser) return; appMessage.textContent = "";
-  document.querySelectorAll("[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === view));
-  if (view === "dashboard") {
-    const { count: mine } = await supabase.from("reservations").select("id", { count: "exact", head: true }).eq("user_id", currentUser.id);
-    let pending = 0;
-    if (isAdmin()) { const r = await supabase.from("reservations").select("id", { count: "exact", head: true }).eq("status", "Pending"); pending = r.count || 0; }
-    dashboardContent.innerHTML = `<h3>Welcome to ClassReserve</h3><div class="stat-grid"><article class="stat-card"><span>My requests</span><strong>${mine ?? 0}</strong></article>${isAdmin() ? `<article class="stat-card pending-stat"><span>Pending approval</span><strong>${pending}</strong></article>` : ""}</div><p>Choose a colored menu tab above to browse classrooms, submit a request, or check its progress.</p>`;
-  } else if (view === "rooms") renderRooms();
-  else if (view === "reservations") await loadReservations(false);
-  else if (view === "history") await loadReservations(true);
+  if (error || !data) {
+    throw new Error(
+      "Your user profile could not be loaded. Contact the administrator."
+    );
+  }
+
+  const role = String(data.role || "").toLowerCase();
+
+  if (!["admin", "faculty", "student"].includes(role)) {
+    throw new Error("Your account has an invalid role.");
+  }
+
+  return data;
 }
-function renderRooms() {
-  const rooms = [{name:"Classroom 101",capacity:30,building:"Main Building"},{name:"Classroom 102",capacity:40,building:"Main Building"},{name:"Computer Laboratory",capacity:35,building:"Technology Building"}];
-  dashboardContent.innerHTML = `<h3>Available Classrooms</h3><p>Select a room to send a reservation request.</p><div class="room-grid">${rooms.map(r=>`<article class="room-card"><h4>${r.name}</h4><p>Capacity: ${r.capacity} people</p><p>${r.building}</p>${isAdmin()?"":"<button class='primary-button' data-book='"+r.name+"'>Request this room</button>"}</article>`).join("")}</div>`;
-  dashboardContent.querySelectorAll("[data-book]").forEach(b=>b.addEventListener("click",()=>reservationForm(b.dataset.book)));
+
+async function openDashboard(user) {
+  currentUser = user;
+  currentProfile = await loadProfile(user);
+
+  loginSection.hidden = true;
+  dashboardSection.hidden = false;
+  showLoginError("");
+
+  $("dashboard-title").textContent =
+    `${currentProfile.role} Dashboard`;
+
+  $("welcome-message").textContent =
+    `Welcome, ${currentProfile.username}!`;
+
+  await switchView("dashboard");
 }
-function reservationForm(room) {
-  dashboardContent.innerHTML = `<h3>Request ${escapeHTML(room)}</h3><form id="booking-form" class="booking-form"><label for="booking-date">Reservation date</label><input id="booking-date" type="date" min="${new Date().toLocaleDateString("en-CA")}" required><label for="booking-time">Reservation time</label><input id="booking-time" type="text" placeholder="9:00 AM - 11:00 AM" required><button class="primary-button" type="submit">Submit request</button><button class="secondary-button" id="cancel-booking" type="button">Cancel</button></form>`;
-  $("cancel-booking").addEventListener("click",()=>renderView("rooms"));
-  $("booking-form").addEventListener("submit",async e=>{e.preventDefault(); const {error}=await supabase.from("reservations").insert({user_id:currentUser.id,username:currentProfile.username,role:currentProfile.role,classroom:room,reservation_date:$("booking-date").value,reservation_time:$("booking-time").value.trim(),status:"Pending"}); if(error)setMessage(`Request could not be submitted: ${error.message}`,true); else {setMessage("Your room request was submitted. Its status is Pending."); await loadReservations(false);}});
+
+async function handleLogin(event) {
+  event.preventDefault();
+  if (!supabase) return;
+
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in...";
+  showLoginError("");
+
+  try {
+    const email = $("email").value.trim();
+    const password = $("password").value;
+
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) throw error;
+    await openDashboard(data.user);
+  } catch (error) {
+    showLoginError(error.message);
+    await supabase.auth.signOut();
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Log In";
+  }
 }
-async function loadReservations(historyOnly) {
-  dashboardContent.innerHTML = "<p>Loading…</p>";
-  if (historyOnly) return loadHistory();
-  let query = supabase.from("reservations").select("id, user_id, username, role, classroom, reservation_date, reservation_time, status, created_at").order("created_at",{ascending:false});
-  if (!isAdmin()) query = query.eq("user_id",currentUser.id);
-  const {data,error}=await query;
-  if(error){dashboardContent.innerHTML="<p>Unable to load requests. Check the Supabase SQL setup and Row Level Security policies.</p>";setMessage(error.message,true);return;}
-  dashboardContent.innerHTML = `<h3>${isAdmin()?"Incoming reservation requests":"My reservation requests"}</h3>${!data?.length?"<p>No reservation requests yet.</p>":`<div class="table-wrap"><table><thead><tr>${isAdmin()?"<th>Requester</th><th>Role</th>":""}<th>Classroom</th><th>Date</th><th>Time</th><th>Status</th>${isAdmin()?"<th>Decision</th>":""}</tr></thead><tbody>${data.map(r=>`<tr>${isAdmin()?`<td>${escapeHTML(r.username)}</td><td>${escapeHTML(r.role)}</td>`:""}<td>${escapeHTML(r.classroom)}</td><td>${escapeHTML(r.reservation_date)}</td><td>${escapeHTML(r.reservation_time)}</td><td><span class="status status-${r.status.toLowerCase()}">${escapeHTML(r.status)}</span></td>${isAdmin()?`<td>${r.status==="Pending"?`<button class="approve-button" data-approve="${r.id}">Approve</button> <button class="reject-button" data-reject="${r.id}">Reject</button>`:`<span class="muted">Decision recorded</span>`}</td>`:""}</tr>`).join("")}</tbody></table></div>`}`;
-  dashboardContent.querySelectorAll("[data-approve]").forEach(b=>b.addEventListener("click",()=>updateStatus(b.dataset.approve,"Approved")));
-  dashboardContent.querySelectorAll("[data-reject]").forEach(b=>b.addEventListener("click",()=>updateStatus(b.dataset.reject,"Rejected")));
+
+async function handleLogout() {
+  if (supabase) {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showMessage(error.message, true);
+      return;
+    }
+  }
+
+  currentUser = null;
+  currentProfile = null;
+  dashboardSection.hidden = true;
+  loginSection.hidden = false;
+  loginForm.reset();
+  clearMessage();
 }
-async function updateStatus(id,status) {
-  const {error}=await supabase.from("reservations").update({status}).eq("id",id);
-  if(error){setMessage(`Could not update request: ${error.message}`,true);return;}
-  setMessage(`Request ${status.toLowerCase()}. The database history trigger records this decision.`); await loadReservations(false);
+
+async function getReservations() {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
-async function loadHistory() {
-  let q=supabase.from("reservation_history").select("id,reservation_id,changed_by,old_status,new_status,changed_at,username,classroom").order("changed_at",{ascending:false});
-  if(!isAdmin()) q=q.eq("user_id",currentUser.id);
-  const {data,error}=await q;
-  if(error){dashboardContent.innerHTML="<h3>Request History</h3><p>History is not set up yet. An administrator must run the SQL setup file in Supabase.</p>";setMessage(error.message,true);return;}
-  dashboardContent.innerHTML=`<h3>Request History</h3>${!data?.length?"<p>No decisions have been recorded yet.</p>":`<div class="table-wrap"><table><thead><tr><th>Requester</th><th>Classroom</th><th>Previous status</th><th>New status</th><th>Changed at</th></tr></thead><tbody>${data.map(h=>`<tr><td>${escapeHTML(h.username)}</td><td>${escapeHTML(h.classroom)}</td><td>${escapeHTML(h.old_status||"New request")}</td><td><span class="status status-${String(h.new_status).toLowerCase()}">${escapeHTML(h.new_status)}</span></td><td>${new Date(h.changed_at).toLocaleString()}</td></tr>`).join("")}</tbody></table></div>`}`;
+
+async function getClassrooms() {
+  const { data, error } = await supabase
+    .from("classrooms")
+    .select("*");
+
+  if (error) throw error;
+  return data || [];
 }
+
+async function getBuildings() {
+  const { data, error } = await supabase
+    .from("buildings")
+    .select("*");
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function renderDashboard() {
+  const reservations = await getReservations();
+
+  const total = reservations.length;
+  const pending = reservations.filter(
+    (r) => r.status?.toLowerCase() === "pending"
+  ).length;
+  const approved = reservations.filter(
+    (r) => r.status?.toLowerCase() === "approved"
+  ).length;
+  const rejected = reservations.filter(
+    (r) => r.status?.toLowerCase() === "rejected"
+  ).length;
+
+  dashboardContent.innerHTML = `
+    <h3>Reservation Overview</h3>
+    <p>${isAdmin()
+      ? "Manage classroom reservation requests."
+      : "Track your classroom reservation requests."}</p>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span>Total Reservations</span>
+        <strong>${total}</strong>
+      </div>
+      <div class="stat-card pending-stat">
+        <span>Pending Requests</span>
+        <strong>${pending}</strong>
+      </div>
+      <div class="stat-card">
+        <span>Approved</span>
+        <strong>${approved}</strong>
+      </div>
+      <div class="stat-card">
+        <span>Rejected</span>
+        <strong>${rejected}</strong>
+      </div>
+    </div>
+
+    <h3>Recent Reservations</h3>
+    ${reservationTable(reservations.slice(0, 5), false)}
+  `;
+}
+
+function reservationTable(reservations, actions = false) {
+  const headers = [
+    "Classroom", "Date", "Time", "Status"
+  ];
+
+  if (isAdmin()) headers.unshift("Requested By");
+  if (actions && isAdmin()) headers.push("Actions");
+
+  const rows = reservations.map((r) => {
+    let cells = "";
+
+    if (isAdmin()) {
+      cells += `<td>${escapeHTML(r.username)}</td>`;
+    }
+
+    cells += `
+      <td>${escapeHTML(r.classroom)}</td>
+      <td>${escapeHTML(formatDate(r.reservation_date))}</td>
+      <td>${escapeHTML(r.reservation_time)}</td>
+      <td>${statusBadge(r.status)}</td>
+    `;
+
+    if (actions && isAdmin()) {
+      cells += `<td>`;
+
+      if (r.status?.toLowerCase() === "pending") {
+        cells += `
+          <button class="approve-button"
+            data-action="approve" data-id="${r.id}">
+            Approve
+          </button>
+          <button class="reject-button"
+            data-action="reject" data-id="${r.id}">
+            Reject
+          </button>
+        `;
+      } else {
+        cells += "—";
+      }
+
+      cells += `</td>`;
+    }
+
+    return `<tr>${cells}</tr>`;
+  });
+
+  return renderTable(headers, rows);
+}
+
+async function renderRooms() {
+  const [rooms, buildings] = await Promise.all([
+    getClassrooms(),
+    getBuildings()
+  ]);
+
+  const buildingNames = new Map(
+    buildings.map((b) => [String(b.id), b.name])
+  );
+
+  dashboardContent.innerHTML = `
+    <h3>Available Classrooms</h3>
+    <p>Browse the classrooms registered in ClassReserve.</p>
+
+    <div class="room-grid">
+      ${rooms.map((room) => `
+        <div class="room-card">
+          <h4>${escapeHTML(
+            room.name || room.classroom_name || "Classroom"
+          )}</h4>
+          <p>Building: ${escapeHTML(
+            buildingNames.get(String(room.building_id)) ||
+            room.building || "Not specified"
+          )}</p>
+          <p>Capacity: ${escapeHTML(
+            room.capacity ?? "Not specified"
+          )}</p>
+          <p>Status: ${escapeHTML(
+            room.status || "Active"
+          )}</p>
+        </div>
+      `).join("") || "<p>No classrooms found.</p>"}
+    </div>
+  `;
+}
+
+async function renderReservations() {
+  const reservations = await getReservations();
+
+  if (isAdmin()) {
+    dashboardContent.innerHTML = `
+      <h3>Manage Reservation Requests</h3>
+      <p>Review pending classroom reservations.</p>
+      ${reservationTable(reservations, true)}
+    `;
+    return;
+  }
+
+  const rooms = await getClassrooms();
+
+  dashboardContent.innerHTML = `
+    <h3>Request a Classroom</h3>
+    <p>Submit a classroom reservation for approval.</p>
+
+    <form id="booking-form" class="booking-form">
+      <label for="booking-classroom">Classroom</label>
+      <select id="booking-classroom" required>
+        <option value="">Select classroom</option>
+        ${rooms.map((room) => {
+          const name = room.name || room.classroom_name;
+          return `<option value="${escapeHTML(name)}">
+            ${escapeHTML(name)}
+          </option>`;
+        }).join("")}
+      </select>
+
+      <label for="booking-date">Reservation Date</label>
+      <input type="date" id="booking-date" required>
+
+      <label for="booking-time">Reservation Time</label>
+      <input type="time" id="booking-time" required>
+
+      <button type="submit" class="primary-button">
+        Submit Request
+      </button>
+    </form>
+
+    <h3>My Reservations</h3>
+    ${reservationTable(reservations)}
+  `;
+
+  $("booking-date").min =
+    new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString().split("T")[0];
+
+  $("booking-form").addEventListener("submit", submitReservation);
+}
+
+async function submitReservation(event) {
+  event.preventDefault();
+
+  if (isAdmin() || !currentUser) return;
+
+  const button = event.currentTarget.querySelector(
+    'button[type="submit"]'
+  );
+  button.disabled = true;
+
+  try {
+    const classroom = $("booking-classroom").value;
+    const reservationDate = $("booking-date").value;
+    const reservationTime = $("booking-time").value;
+
+    if (!classroom || !reservationDate || !reservationTime) {
+      throw new Error("Complete all reservation fields.");
+    }
+
+    const { error } = await supabase
+      .from("reservations")
+      .insert({
+        user_id: currentUser.id,
+        username: currentProfile.username,
+        role: roleName(),
+        classroom,
+        reservation_date: reservationDate,
+        reservation_time: reservationTime,
+        status: "Pending"
+      });
+
+    if (error) throw error;
+
+    await renderReservations();
+    showMessage("Reservation request submitted successfully!");
+  } catch (error) {
+    showMessage(error.message, true);
+    button.disabled = false;
+  }
+}
+
+async function updateReservation(id, status) {
+  if (!isAdmin()) return;
+
+  const confirmed = confirm(
+    `Are you sure you want to ${status.toLowerCase()} this request?`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("reservations")
+      .update({ status })
+      .eq("id", id)
+      .eq("status", "Pending")
+      .select("id");
+
+    if (error) throw error;
+
+    if (!data?.length) {
+      throw new Error(
+        "This request may have already been processed."
+      );
+    }
+
+    await renderReservations();
+    showMessage(`Reservation ${status.toLowerCase()} successfully.`);
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function renderHistory() {
+  const { data, error } = await supabase
+    .from("reservation_history")
+    .select("*")
+    .order("changed_at", { ascending: false });
+
+  if (error) throw error;
+
+  const records = data || [];
+  const headers = [
+    "Classroom", "Previous Status", "New Status", "Changed At"
+  ];
+
+  if (isAdmin()) headers.unshift("User");
+
+  const rows = records.map((record) => `
+    <tr>
+      ${isAdmin()
+        ? `<td>${escapeHTML(record.username)}</td>`
+        : ""}
+      <td>${escapeHTML(record.classroom)}</td>
+      <td>${escapeHTML(record.old_status || "New Request")}</td>
+      <td>${statusBadge(record.new_status)}</td>
+      <td>${escapeHTML(
+        new Date(record.changed_at).toLocaleString()
+      )}</td>
+    </tr>
+  `);
+
+  dashboardContent.innerHTML = `
+    <h3>Reservation History</h3>
+    <p>View reservation status changes.</p>
+    ${renderTable(headers, rows)}
+  `;
+}
+
+async function switchView(view) {
+  if (!currentUser) return;
+
+  currentView = view;
+  clearMessage();
+
+  document.querySelectorAll(".navigation button")
+    .forEach((button) => {
+      button.classList.toggle(
+        "active",
+        button.dataset.view === view
+      );
+    });
+
+  dashboardContent.innerHTML = "<p>Loading...</p>";
+
+  try {
+    if (view === "dashboard") await renderDashboard();
+    else if (view === "rooms") await renderRooms();
+    else if (view === "reservations") await renderReservations();
+    else if (view === "history") await renderHistory();
+    else await renderDashboard();
+  } catch (error) {
+    dashboardContent.innerHTML = "";
+    showMessage(error.message, true);
+  }
+}
+
+async function sendPasswordReset(event) {
+  event.preventDefault();
+
+  if (!supabase) return;
+
+  const email = $("reset-email").value.trim();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email,
+    {
+      redirectTo: window.location.origin +
+        window.location.pathname
+    }
+  );
+
+  showLoginError(
+    error
+      ? error.message
+      : "If the email is registered, a reset link will be sent."
+  );
+}
+
+async function saveNewPassword(event) {
+  event.preventDefault();
+
+  if (!supabase) return;
+
+  const password = $("new-password").value;
+
+  const { error } = await supabase.auth.updateUser({
+    password
+  });
+
+  if (error) {
+    showLoginError(error.message);
+    return;
+  }
+
+  $("new-password-form").hidden = true;
+  $("login-form").hidden = false;
+
+  showLoginError("");
+  alert("Password updated successfully.");
+}
+
+function registerEvents() {
+  loginForm.addEventListener("submit", handleLogin);
+
+  $("logout-button").addEventListener("click", handleLogout);
+
+  $("forgot-password-button").addEventListener("click", () => {
+    const form = $("reset-password-form");
+    form.hidden = !form.hidden;
+  });
+
+  $("reset-password-form").addEventListener(
+    "submit", sendPasswordReset
+  );
+
+  $("new-password-form").addEventListener(
+    "submit", saveNewPassword
+  );
+
+  document.querySelectorAll(".navigation button")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        switchView(button.dataset.view);
+      });
+    });
+
+  dashboardContent.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+
+    const id = Number(button.dataset.id);
+
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+
+    if (button.dataset.action === "approve") {
+      updateReservation(id, "Approved");
+    } else if (button.dataset.action === "reject") {
+      updateReservation(id, "Rejected");
+    }
+  });
+}
+
+async function startApp() {
+  registerEvents();
+
+  if (!initializeSupabase()) return;
+
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      loginForm.hidden = true;
+      $("new-password-form").hidden = false;
+      $("reset-password-form").hidden = true;
+    }
+  });
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error && error.name !== "AuthSessionMissingError") {
+      console.warn("Session check:", error.message);
+    }
+
+    if (data?.user) {
+      await openDashboard(data.user);
+    }
+  } catch (error) {
+    console.error("ClassReserve startup error:", error);
+    dashboardSection.hidden = true;
+    loginSection.hidden = false;
+    showLoginError(error.message);
+  }
+}
+
+startApp();
