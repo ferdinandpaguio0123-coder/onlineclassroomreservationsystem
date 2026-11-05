@@ -372,6 +372,7 @@ async function renderRooms() {
                 <th>ID</th>
                 <th>Building</th>
                 <th>Status</th>
+                <th>Admin Actions</th>
               </tr>
             </thead>
 
@@ -381,6 +382,10 @@ async function renderRooms() {
                   <td>${escapeHTML(b.id)}</td>
                   <td>${escapeHTML(buildingName(b))}</td>
                   <td>${escapeHTML(b.status || "Active")}</td>
+                  <td>
+                    <button type="button" class="btn btn-primary btn-small" data-edit-building="${escapeHTML(b.id)}">Edit</button>
+                    <button type="button" class="btn btn-small" data-toggle-building="${escapeHTML(b.id)}">${b.status === "Archived" ? "Restore" : "Archive"}</button>
+                  </td>
                 </tr>
               `).join("")}
             </tbody>
@@ -433,9 +438,10 @@ async function renderRooms() {
     );
 
     const filtered = rooms.filter((room) => {
+      const building = buildings.find((b) => String(b.id) === String(room.building_id));
       return (
-        (!buildingFilter ||
-          String(room.building_id) === buildingFilter) &&
+        (isAdmin() || (room.status === "Available" && building?.status === "Active")) &&
+        (!buildingFilter || String(room.building_id) === buildingFilter) &&
         Number(room.capacity) >= capacityFilter
       );
     });
@@ -484,6 +490,7 @@ async function renderRooms() {
               Manage Status
             </button>
 
+            <button type="button" class="btn btn-small" data-toggle-room="${escapeHTML(room.id)}">${room.status === "Archived" ? "Restore" : "Archive"}</button>
           </div>
         ` : ""}
 
@@ -499,6 +506,27 @@ async function renderRooms() {
   $("filter-capacity")?.addEventListener("input", drawRooms);
 
   function attachRoomActions() {
+    document.querySelectorAll("[data-toggle-room]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const room = rooms.find((r) => String(r.id) === button.dataset.toggleRoom);
+        if (!room) return;
+        const archived = room.status === "Archived";
+        if (!confirm(`${archived ? "Restore" : "Archive"} ${roomName(room)}?`)) return;
+        button.disabled = true;
+        try {
+          const { data, error } = await supabase.from("classrooms")
+            .update({ status: archived ? "Available" : "Archived" })
+            .eq("id", room.id).select("id");
+          if (error) throw error;
+          if (!data?.length) throw new Error("Room update was not permitted.");
+          await navigate("rooms");
+          message(`Room ${archived ? "restored" : "archived"} successfully.`);
+        } catch (error) {
+          message(error.message, true);
+          if (button.isConnected) button.disabled = false;
+        }
+      });
+    });
 
     // EDIT CLASSROOM
     document.querySelectorAll("[data-edit-room]").forEach((button) => {
@@ -543,7 +571,7 @@ async function renderRooms() {
           capacity < 1 ||
           capacity > 10000 ||
           !buildings.some(
-            (b) => Number(b.id) === building_id
+            (b) => Number(b.id) === building_id && b.status === "Active"
           )
         ) {
           message("Invalid classroom details.", true);
@@ -570,6 +598,7 @@ async function renderRooms() {
 
         await navigate("rooms");
         message("Classroom updated successfully.");
+
       });
     });
 
@@ -581,6 +610,10 @@ async function renderRooms() {
         );
 
         if (!room) return;
+        if (room.status === "Archived") {
+          message("Restore this room using the Restore button first.", true);
+          return;
+        }
 
         const newStatus = prompt(
           "Enter classroom status:\n\n" +
@@ -646,6 +679,58 @@ async function renderRooms() {
 
   if (!isAdmin()) return;
 
+  document.querySelectorAll("[data-edit-building]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const building = buildings.find((b) => String(b.id) === button.dataset.editBuilding);
+      if (!building) return;
+      const name = prompt("Building name:", building.building_name);
+      if (name === null) return;
+      const cleanedName = name.trim();
+      if (!cleanedName || cleanedName.length > 100) return message("Building name must be 1–100 characters.", true);
+      const description = prompt("Building description:", building.description || "");
+      if (description === null) return;
+      if (description.length > 300) return message("Description must be at most 300 characters.", true);
+      button.disabled = true;
+      try {
+        const { data, error } = await supabase.from("buildings")
+          .update({ building_name: cleanedName, description: description.trim() || null })
+          .eq("id", building.id).select("id");
+        if (error) throw error;
+        if (!data?.length) throw new Error("Building edit was not permitted.");
+        await navigate("rooms");
+        message("Building updated successfully.");
+      } catch (error) {
+        message(error.message, true);
+        if (button.isConnected) button.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-toggle-building]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const building = buildings.find((b) => String(b.id) === button.dataset.toggleBuilding);
+      if (!building) return;
+      const archived = building.status === "Archived";
+      const explanation = archived
+        ? "Rooms will stay archived until you restore them individually."
+        : "All rooms in this building will also be archived.";
+      if (!confirm(`${archived ? "Restore" : "Archive"} ${buildingName(building)}?\n\n${explanation}`)) return;
+      button.disabled = true;
+      try {
+        const { data, error } = await supabase.from("buildings")
+          .update({ status: archived ? "Active" : "Archived" })
+          .eq("id", building.id).select("id");
+        if (error) throw error;
+        if (!data?.length) throw new Error("Building update was not permitted.");
+        await navigate("rooms");
+        message(`Building ${archived ? "restored" : "archived"} successfully.`);
+      } catch (error) {
+        message(error.message, true);
+        if (button.isConnected) button.disabled = false;
+      }
+    });
+  });
+
   // ADD BUILDING
   $("add-building-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -692,7 +777,7 @@ async function renderRooms() {
     if (
       !classroom_name ||
       !buildings.some(
-        (b) => Number(b.id) === building_id
+        (b) => Number(b.id) === building_id && b.status === "Active"
       ) ||
       !Number.isInteger(capacity) ||
       capacity < 1 ||
@@ -1414,6 +1499,7 @@ function setupCalendar(rooms, buildings) {
 
             <p>
               <strong>Room Status:</strong>
+
               ${badge(room.status || "Available")}
             </p>
 
@@ -1489,9 +1575,10 @@ async function renderReservations() {
     getBuildings()
   ]);
 
-  const activeRooms = rooms.filter(
-    (room) => roomStatus(room) === "available"
-  );
+  const activeRooms = rooms.filter((room) => {
+    const building = buildings.find((b) => String(b.id) === String(room.building_id));
+    return roomStatus(room) === "available" && building?.status === "Active";
+  });
 
   $("dashboard-content").innerHTML = `
     <div class="section-header">
@@ -1510,7 +1597,7 @@ async function renderReservations() {
             <select id="booking-building" required>
               <option value="">Select Building</option>
 
-              ${buildings.map((building) => `
+              ${buildings.filter((building) => building.status === "Active").map((building) => `
                 <option value="${escapeHTML(building.id)}">
                   ${escapeHTML(buildingName(building))}
                 </option>
@@ -1668,12 +1755,12 @@ async function renderReservations() {
   );
 
   setupAvailabilityChecker(
-    rooms,
+    isAdmin() ? rooms : activeRooms,
     buildings
   );
 
   setupCalendar(
-    rooms,
+    isAdmin() ? rooms : activeRooms,
     buildings
   );
 }
@@ -1713,6 +1800,7 @@ async function submitReservation(event) {
   if (start_time >= end_time) {
     return message(
       "End time must be later than start time.",
+
       true
     );
   }
@@ -1751,9 +1839,12 @@ async function submitReservation(event) {
     }
 
     if (roomStatus(room) !== "available") {
-      throw new Error(
-        "This classroom is currently unavailable or under maintenance."
-      );
+      throw new Error("This classroom is currently unavailable or under maintenance.");
+    }
+    const buildings = await getBuildings();
+    const building = buildings.find((b) => String(b.id) === String(room.building_id));
+    if (building?.status !== "Active") {
+      throw new Error("This building is not active.");
     }
 
     // Check availability through the secure Supabase RPC.
@@ -2010,306 +2101,307 @@ function notificationList(items) {
           </button>
         ` : ""}
 
-      </div>
 
-    </div>
-  `).join("");
+      true
+    );
+  }
+
+  if (
+    purpose.length < 3 ||
+    purpose.length > 500
+  ) {
+    return message(
+      "Reservation purpose must contain 3–500 characters.",
+      true
+    );
+  }
+
+  if (reservation_date < localToday()) {
+    return message(
+      "Select today or a future date.",
+      true
+    );
+  }
+
+  const button = event.submitter;
+
+  if (button) button.disabled = true;
+
+  try {
+    const rooms = await getRooms();
+
+    const room = roomById(
+      rooms,
+      classroomId
+    );
+
+    if (!room) {
+      throw new Error("Selected classroom does not exist.");
+    }
+
+    if (roomStatus(room) !== "available") {
+      throw new Error("This classroom is currently unavailable or under maintenance.");
+    }
+    const buildings = await getBuildings();
+    const building = buildings.find((b) => String(b.id) === String(room.building_id));
+    if (building?.status !== "Active") {
+      throw new Error("This building is not active.");
+    }
+
+    // Check availability through the secure Supabase RPC.
+    const available = await checkAvailability(
+      classroomId,
+      reservation_date,
+      start_time,
+      end_time
+    );
+
+    if (!available) {
+      throw new Error(
+        "This classroom is already booked during the selected time."
+      );
+    }
+
+    const { error } = await supabase
+      .from("reservations")
+      .insert({
+        user_id: currentUser.id,
+
+        username:
+          currentProfile?.username ||
+          currentProfile?.full_name ||
+          currentUser.email,
+
+        role: currentProfile?.role || "Student",
+
+        classroom_id: Number(classroomId),
+
+        // Keep the existing classroom text column
+        // for compatibility with older reservations.
+        classroom: roomName(room),
+
+        reservation_date,
+
+        reservation_time:
+          `${start_time} - ${end_time}`,
+
+        start_time,
+        end_time,
+        purpose,
+
+        status: "Pending"
+      });
+
+    if (error) throw error;
+
+    await navigate("reservations");
+
+    message(
+      "Reservation submitted successfully. Waiting for Admin approval."
+    );
+
+  } catch (error) {
+    message(
+      error.message || "Unable to submit reservation.",
+      true
+    );
+  } finally {
+    if (button?.isConnected) {
+      button.disabled = false;
+    }
+  }
 }
 
 /* =============================================
-   NOTIFICATIONS PAGE
+   NOTIFICATION BELL
    ============================================= */
 
-async function renderNotifications() {
-  const [notifications, reservations, rooms, buildings] =
-    await Promise.all([
-      getNotifications(),
-      getReservations(),
-      getRooms(),
-      getBuildings()
-    ]);
+function ensureNotificationBell() {
+  if ($("notification-bell")) return;
 
-  const unreadCount = notifications.filter(
-    (item) => !item.is_read
-  ).length;
+  const dashboardTitle = $("dashboard-title");
+  const welcomeMessage = $("welcome-message");
 
-  $("dashboard-content").innerHTML = `
-    <div class="section-header">
-      <h2>Notifications</h2>
-    </div>
+  const container =
+    dashboardTitle?.parentElement ||
+    welcomeMessage?.parentElement;
 
-    <div class="content-section">
+  if (!container) return;
+
+  const bell = document.createElement("button");
+
+  bell.type = "button";
+  bell.id = "notification-bell";
+  bell.className = "btn btn-small";
+
+  bell.setAttribute(
+    "aria-label",
+    "View notifications"
+  );
+
+  bell.style.cssText = `
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+  `;
+
+  bell.innerHTML = `
+    <span style="font-size:20px;">🔔</span>
+
+    <span
+      id="notification-count"
+      style="
+        display:none;
+        min-width:20px;
+        height:20px;
+        padding:0 5px;
+        border-radius:999px;
+        background:#dc2626;
+        color:white;
+        font-size:12px;
+        font-weight:bold;
+        align-items:center;
+        justify-content:center;
+      "
+    >
+      0
+    </span>
+  `;
+
+  bell.addEventListener("click", () => {
+    navigate("notifications");
+  });
+
+  container.appendChild(bell);
+}
+
+/* =============================================
+   UPDATE UNREAD NOTIFICATION COUNT
+   ============================================= */
+
+async function updateNotificationBell() {
+  const counter = $("notification-count");
+
+  if (!counter || !currentUser) return;
+
+  try {
+    const { count, error } = await supabase
+      .from("reservation_notifications")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
+      .eq("user_id", currentUser.id)
+      .eq("is_read", false);
+
+    if (error) throw error;
+
+    const unread = count || 0;
+
+    counter.textContent =
+      unread > 99 ? "99+" : String(unread);
+
+    counter.style.display =
+      unread > 0 ? "inline-flex" : "none";
+
+  } catch (error) {
+    console.error(
+      "Unable to update notification bell:",
+      error
+    );
+  }
+}
+
+/* =============================================
+   NOTIFICATION LIST
+   ============================================= */
+
+function notificationList(items) {
+  if (!items.length) {
+    return "<p>No notifications yet.</p>";
+  }
+
+  return items.map((item) => `
+    <div
+      class="classroom-card"
+      style="
+        margin-bottom:12px;
+        border-left:4px solid ${
+          item.is_read ? "#94a3b8" : "#2563eb"
+        };
+      "
+    >
 
       <div style="
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        flex-wrap:wrap;
+        justify-content:space-between;
         gap:12px;
-        margin-bottom:18px;
+        flex-wrap:wrap;
       ">
 
-        <div>
-          <h3>My Notifications</h3>
+        <h3>${escapeHTML(item.title || "Notification")}</h3>
 
-          <p>
-            ${unreadCount}
-            unread notification${unreadCount === 1 ? "" : "s"}
-          </p>
-        </div>
-
-        ${unreadCount > 0 ? `
-          <button
-            type="button"
-            id="mark-all-notifications-read"
-            class="btn btn-primary btn-small"
-          >
-            Mark All as Read
-          </button>
+        ${!item.is_read ? `
+          <span style="
+            color:#2563eb;
+            font-size:12px;
+            font-weight:bold;
+          ">
+            NEW
+          </span>
         ` : ""}
 
       </div>
 
-      ${notificationList(notifications)}
-
-    </div>
-  `;
-
-  /* =============================================
-     MARK ONE NOTIFICATION AS READ
-     ============================================= */
-
-  document.querySelectorAll(
-    "[data-read-notification]"
-  ).forEach((button) => {
-
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-
-      try {
-        const { data, error } = await supabase
-          .from("reservation_notifications")
-          .update({
-            is_read: true
-          })
-          .eq("id", button.dataset.readNotification)
-          .eq("user_id", currentUser.id)
-          .select("id");
-
-        if (error) throw error;
-
-        if (!data?.length) {
-          throw new Error(
-            "Notification could not be updated."
-          );
-        }
-
-        await updateNotificationBell();
-        await navigate("notifications");
-
-      } catch (error) {
-        message(error.message, true);
-
-        if (button.isConnected) {
-          button.disabled = false;
-        }
-      }
-    });
-
-  });
-
-  /* =============================================
-     MARK ALL NOTIFICATIONS AS READ
-     ============================================= */
-
-  $("mark-all-notifications-read")?.addEventListener(
-    "click",
-    async (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-
-      try {
-        const { error } = await supabase
-          .from("reservation_notifications")
-          .update({
-            is_read: true
-          })
-          .eq("user_id", currentUser.id)
-          .eq("is_read", false);
-
-        if (error) throw error;
-
-        await updateNotificationBell();
-        await navigate("notifications");
-
-        message("All notifications marked as read.");
-
-      } catch (error) {
-        message(error.message, true);
-
-        if (button.isConnected) {
-          button.disabled = false;
-        }
-      }
-    }
-  );
-
-  /* =============================================
-     OPEN RESERVATION FROM NOTIFICATION
-     ============================================= */
-
-  document.querySelectorAll(
-    "[data-notification-reservation]"
-  ).forEach((button) => {
-
-    button.addEventListener("click", () => {
-      const reservation = reservations.find(
-        (item) =>
-          String(item.id) ===
-          String(button.dataset.notificationReservation)
-      );
-
-      if (!reservation) {
-        message(
-          "Reservation details are unavailable.",
-          true
-        );
-        return;
-      }
-
-      showReservationDetails(
-        reservation,
-        rooms,
-        buildings
-      );
-    });
-
-  });
-
-  await updateNotificationBell();
-}
-
-/* =============================================
-   REQUEST HISTORY
-   ============================================= */
-
-async function renderHistory() {
-  const [reservations, rooms, buildings] =
-    await Promise.all([
-      getReservations(),
-      getRooms(),
-      getBuildings()
-    ]);
-
-  $("dashboard-content").innerHTML = `
-    <div class="section-header">
-      <h2>Request History</h2>
-    </div>
-
-    <div class="content-section">
-
-      <h3>Reservation Records</h3>
-
-      <p style="margin-bottom:16px;">
-        View your reservation requests and their
-        current approval status.
+      <p style="margin-top:10px;">
+        ${escapeHTML(item.message || "")}
       </p>
 
-      ${reservationTable(reservations)}
+      <small>
+        ${escapeHTML(
+          item.created_at
+            ? new Date(item.created_at).toLocaleString()
+            : ""
+        )}
+      </small>
 
-    </div>
-  `;
+      <div style="
+        display:flex;
+        gap:8px;
+        margin-top:14px;
+        flex-wrap:wrap;
+      ">
 
-  // Allow users to view complete reservation details.
-  attachReservationActions(
-    reservations,
-    rooms,
-    buildings
-  );
-}
+        ${!item.is_read ? `
+          <button
+            type="button"
+            class="btn btn-primary btn-small"
+            data-read-notification="${escapeHTML(item.id)}"
+          >
+            Mark as Read
+          </button>
+        ` : `
+          <span style="font-size:13px;opacity:0.7;">
+            Read
+          </span>
+        `}
 
-/* =============================================
-   CLASSRESERVE - PART 6 OF 6
-   NAVIGATION, AUTHENTICATION AND STARTUP
-   ============================================= */
+        ${item.reservation_id ? `
+          <button
+            type="button"
+            class="btn btn-small"
+            data-notification-reservation="${escapeHTML(item.reservation_id)}"
+          >
+            View Reservation
+          </button>
+        ` : ""}
 
-let notificationChannel = null;
-let navigationRequestId = 0;
-
-/* =============================================
-   SIDEBAR NAVIGATION
-   ============================================= */
-
-function setupNavigation() {
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    if (button.dataset.classreserveBound === "true") return;
-
-    button.dataset.classreserveBound = "true";
-
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-
-      const view = button.dataset.view;
-
-      if (view) {
-        navigate(view);
-      }
-    });
-  });
-}
-
-/* =============================================
-   NAVIGATION
-   ============================================= */
-
-async function navigate(view = "dashboard") {
-  if (!currentUser) {
-    showLogin();
-    return;
-  }
-
-  const validViews = [
-    "dashboard",
-    "rooms",
-    "reservations",
-    "history",
-    "notifications"
-  ];
-
-  if (!validViews.includes(view)) {
-    view = "dashboard";
-  }
-
-  currentView = view;
-
-  const requestId = ++navigationRequestId;
-
-  const content = $("dashboard-content");
-
-  if (!content) {
-    console.error("Dashboard content element not found.");
-    return;
-  }
-
-  content.innerHTML = `
-    <div class="content-section">
-      <p>Loading...</p>
-    </div>
-  `;
-
-  message("");
-
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    const active = button.dataset.view === view;
-
-    button.classList.toggle("active", active);
-
-    if (active) {
-      button.setAttribute("aria-current", "page");
-    } else {
-      button.removeAttribute("aria-current");
-    }
-  });
 
   const titles = {
     dashboard: "Dashboard",
@@ -2791,4 +2883,3 @@ if (document.readyState === "loading") {
 
 /* =============================================
    END OF CLASSRESERVE SCRIPT.JS
-   ============================================= */
