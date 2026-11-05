@@ -1,578 +1,1022 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/* =========================================
+   CLASSRESERVE - COMPLETE JAVASCRIPT
+   ========================================= */
+
 const $ = (id) => document.getElementById(id);
 
-const loginSection = $("login-section");
-const dashboardSection = $("dashboard-section");
-const loginForm = $("login-form");
-const loginButton = $("login-button");
-const loginError = $("login-error");
-const dashboardContent = $("dashboard-content");
-const appMessage = $("app-message");
+const SUPABASE_URL = window.CLASSRESERVE_SUPABASE_URL;
+const SUPABASE_KEY = window.CLASSRESERVE_SUPABASE_PUBLISHABLE_KEY;
 
 let supabase = null;
 let currentUser = null;
 let currentProfile = null;
 let currentView = "dashboard";
 
-const URL = window.CLASSRESERVE_SUPABASE_URL;
-const KEY = window.CLASSRESERVE_SUPABASE_PUBLISHABLE_KEY;
-
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
     "'": "&#39;"
-  })[char]);
+  })[character]);
 }
 
-function showLoginError(message) {
-  loginError.textContent = message;
-  loginError.hidden = !message;
+function showMessage(text, error = false) {
+  const element = $("app-message");
+  if (!element) return;
+
+  element.hidden = !text;
+  element.textContent = text;
+  element.className = error
+    ? "alert alert-error"
+    : "alert alert-success";
 }
 
-function showMessage(message, error = false) {
-  appMessage.textContent = message;
-  appMessage.className = error
-    ? "message error"
-    : "message success";
+function showLoginError(text) {
+  const element = $("login-error");
+  if (!element) return;
+
+  element.hidden = !text;
+  element.textContent = text;
 }
 
-function clearMessage() {
-  showMessage("");
+function showLogin() {
+  $("login-section")?.classList.remove("hidden");
+  $("dashboard-section")?.classList.add("hidden");
+}
+
+function showDashboard() {
+  $("login-section")?.classList.add("hidden");
+  $("dashboard-section")?.classList.remove("hidden");
+}
+
+function getRole() {
+  return String(currentProfile?.role || "Student").toLowerCase();
 }
 
 function isAdmin() {
-  return currentProfile?.role?.toLowerCase() === "admin";
+  return getRole() === "admin";
 }
 
-function roleName() {
-  return currentProfile?.role?.toLowerCase() || "student";
+function roomName(room) {
+  return room.name ||
+    room.classroom_name ||
+    room.room_name ||
+    `Room ${room.id}`;
 }
 
-function formatDate(value) {
-  if (!value) return "—";
-  const parts = String(value).split("-");
-  if (parts.length !== 3) return value;
-  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+function buildingName(building) {
+  return building?.name ||
+    building?.building_name ||
+    `Building ${building?.id || ""}`;
 }
 
 function statusBadge(status) {
-  const value = String(status || "Pending");
-  const normalized = value.toLowerCase();
-  const className = ["pending", "approved", "rejected"]
-    .includes(normalized) ? normalized : "pending";
-
-  return `<span class="status status-${className}">
-    ${escapeHTML(value)}
-  </span>`;
-}
-
-function renderTable(headers, rows) {
-  if (!rows.length) {
-    return `<p class="muted">No records found.</p>`;
-  }
+  const text = String(status || "Pending");
+  const statusClass = text.toLowerCase();
 
   return `
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>${headers.map((h) =>
-            `<th>${escapeHTML(h)}</th>`).join("")}</tr>
-        </thead>
-        <tbody>${rows.join("")}</tbody>
-      </table>
-    </div>
+    <span class="status-badge status-${escapeHTML(statusClass)}">
+      ${escapeHTML(text)}
+    </span>
   `;
 }
 
-function initializeSupabase() {
-  if (
-    typeof URL !== "string" ||
-    !URL.startsWith("https://") ||
-    typeof KEY !== "string" ||
-    !KEY.startsWith("sb_publishable_")
-  ) {
-    showLoginError(
-      "Supabase setup is incomplete. Check the Project URL and sb_publishable_ key in supabase-config.js."
-    );
-    loginButton.disabled = true;
-    return false;
-  }
+/* =========================================
+   DATABASE
+   ========================================= */
 
-  try {
-    supabase = createClient(URL, KEY);
-    loginButton.disabled = false;
-    return true;
-  } catch (error) {
-    showLoginError("Unable to initialize Supabase: " + error.message);
-    loginButton.disabled = true;
-    return false;
-  }
-}
-
-async function loadProfile(user) {
+async function loadProfile() {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, role")
-    .eq("id", user.id)
+    .select("*")
+    .eq("id", currentUser.id)
     .single();
 
-  if (error || !data) {
-    throw new Error(
-      "Your user profile could not be loaded. Contact the administrator."
-    );
-  }
-
-  const role = String(data.role || "").toLowerCase();
-
-  if (!["admin", "faculty", "student"].includes(role)) {
-    throw new Error("Your account has an invalid role.");
-  }
-
-  return data;
-}
-
-async function openDashboard(user) {
-  currentUser = user;
-  currentProfile = await loadProfile(user);
-
-  loginSection.hidden = true;
-  dashboardSection.hidden = false;
-  showLoginError("");
-
-  $("dashboard-title").textContent =
-    `${currentProfile.role} Dashboard`;
-
-  $("welcome-message").textContent =
-    `Welcome, ${currentProfile.username}!`;
-
-  await switchView("dashboard");
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  if (!supabase) return;
-
-  loginButton.disabled = true;
-  loginButton.textContent = "Signing in...";
-  showLoginError("");
-
-  try {
-    const email = $("email").value.trim();
-    const password = $("password").value;
-
-    const { data, error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-    if (error) throw error;
-    await openDashboard(data.user);
-  } catch (error) {
-    showLoginError(error.message);
-    await supabase.auth.signOut();
-  } finally {
-    loginButton.disabled = false;
-    loginButton.textContent = "Log In";
-  }
-}
-
-async function handleLogout() {
-  if (supabase) {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      showMessage(error.message, true);
-      return;
-    }
-  }
-
-  currentUser = null;
-  currentProfile = null;
-  dashboardSection.hidden = true;
-  loginSection.hidden = false;
-  loginForm.reset();
-  clearMessage();
-}
-
-async function getReservations() {
-  const { data, error } = await supabase
-    .from("reservations")
-    .select("*")
-    .order("created_at", { ascending: false });
-
   if (error) throw error;
-  return data || [];
-}
 
-async function getClassrooms() {
-  const { data, error } = await supabase
-    .from("classrooms")
-    .select("*");
-
-  if (error) throw error;
-  return data || [];
+  currentProfile = data;
 }
 
 async function getBuildings() {
   const { data, error } = await supabase
     .from("buildings")
-    .select("*");
+    .select("*")
+    .order("id");
 
   if (error) throw error;
+
   return data || [];
 }
 
+async function getRooms() {
+  const { data, error } = await supabase
+    .from("classrooms")
+    .select("*")
+    .order("id");
+
+  if (error) throw error;
+
+  return data || [];
+}
+
+async function getReservations() {
+  let query = supabase
+    .from("reservations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (!isAdmin()) {
+    query = query.eq("user_id", currentUser.id);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  return data || [];
+}
+
+/* =========================================
+   DASHBOARD
+   ========================================= */
+
 async function renderDashboard() {
+  const rooms = await getRooms();
   const reservations = await getReservations();
 
-  const total = reservations.length;
   const pending = reservations.filter(
-    (r) => r.status?.toLowerCase() === "pending"
+    (r) => String(r.status).toLowerCase() === "pending"
   ).length;
+
   const approved = reservations.filter(
-    (r) => r.status?.toLowerCase() === "approved"
+    (r) => String(r.status).toLowerCase() === "approved"
   ).length;
+
   const rejected = reservations.filter(
-    (r) => r.status?.toLowerCase() === "rejected"
+    (r) => String(r.status).toLowerCase() === "rejected"
   ).length;
 
-  dashboardContent.innerHTML = `
-    <h3>Reservation Overview</h3>
-    <p>${isAdmin()
-      ? "Manage classroom reservation requests."
-      : "Track your classroom reservation requests."}</p>
+  $("dashboard-content").innerHTML = `
+    <h2>${escapeHTML(currentProfile?.role || "User")} Dashboard</h2>
+    <p class="muted">Welcome to ClassReserve.</p>
 
-    <div class="stat-grid">
+    <div class="stats-grid">
+
       <div class="stat-card">
-        <span>Total Reservations</span>
-        <strong>${total}</strong>
+        <h3>Total Classrooms</h3>
+        <div class="stat-number">${rooms.length}</div>
       </div>
-      <div class="stat-card pending-stat">
-        <span>Pending Requests</span>
-        <strong>${pending}</strong>
-      </div>
+
       <div class="stat-card">
-        <span>Approved</span>
-        <strong>${approved}</strong>
+        <h3>${isAdmin() ? "Total Requests" : "My Requests"}</h3>
+        <div class="stat-number">${reservations.length}</div>
       </div>
+
       <div class="stat-card">
-        <span>Rejected</span>
-        <strong>${rejected}</strong>
+        <h3>Pending Requests</h3>
+        <div class="stat-number">${pending}</div>
       </div>
+
+      <div class="stat-card">
+        <h3>Approved Requests</h3>
+        <div class="stat-number">${approved}</div>
+      </div>
+
     </div>
 
-    <h3>Recent Reservations</h3>
-    ${reservationTable(reservations.slice(0, 5), false)}
+    <div class="content-section">
+      <h3>Reservation Overview</h3>
+      <p>
+        Approved: ${approved} |
+        Pending: ${pending} |
+        Rejected: ${rejected}
+      </p>
+
+      ${reservationTable(reservations.slice(0, 5))}
+    </div>
   `;
 }
 
-function reservationTable(reservations, actions = false) {
-  const headers = [
-    "Classroom", "Date", "Time", "Status"
-  ];
-
-  if (isAdmin()) headers.unshift("Requested By");
-  if (actions && isAdmin()) headers.push("Actions");
-
-  const rows = reservations.map((r) => {
-    let cells = "";
-
-    if (isAdmin()) {
-      cells += `<td>${escapeHTML(r.username)}</td>`;
-    }
-
-    cells += `
-      <td>${escapeHTML(r.classroom)}</td>
-      <td>${escapeHTML(formatDate(r.reservation_date))}</td>
-      <td>${escapeHTML(r.reservation_time)}</td>
-      <td>${statusBadge(r.status)}</td>
-    `;
-
-    if (actions && isAdmin()) {
-      cells += `<td>`;
-
-      if (r.status?.toLowerCase() === "pending") {
-        cells += `
-          <button class="approve-button"
-            data-action="approve" data-id="${r.id}">
-            Approve
-          </button>
-          <button class="reject-button"
-            data-action="reject" data-id="${r.id}">
-            Reject
-          </button>
-        `;
-      } else {
-        cells += "—";
-      }
-
-      cells += `</td>`;
-    }
-
-    return `<tr>${cells}</tr>`;
-  });
-
-  return renderTable(headers, rows);
-}
+/* =========================================
+   ADMIN - BUILDINGS AND CLASSROOMS
+   ========================================= */
 
 async function renderRooms() {
   const [rooms, buildings] = await Promise.all([
-    getClassrooms(),
+    getRooms(),
     getBuildings()
   ]);
 
-  const buildingNames = new Map(
-    buildings.map((b) => [String(b.id), b.name])
-  );
+  const findBuildingName = (id) => {
+    const building = buildings.find(
+      (b) => String(b.id) === String(id)
+    );
 
-  dashboardContent.innerHTML = `
-    <h3>Available Classrooms</h3>
-    <p>Browse the classrooms registered in ClassReserve.</p>
+    return building ? buildingName(building) : "Unknown Building";
+  };
 
-    <div class="room-grid">
-      ${rooms.map((room) => `
-        <div class="room-card">
-          <h4>${escapeHTML(
-            room.name || room.classroom_name || "Classroom"
-          )}</h4>
-          <p>Building: ${escapeHTML(
-            buildingNames.get(String(room.building_id)) ||
-            room.building || "Not specified"
-          )}</p>
-          <p>Capacity: ${escapeHTML(
-            room.capacity ?? "Not specified"
-          )}</p>
-          <p>Status: ${escapeHTML(
-            room.status || "Active"
-          )}</p>
+  $("dashboard-content").innerHTML = `
+    <div class="section-header">
+      <h2>${isAdmin() ? "Classroom Management" : "Available Classrooms"}</h2>
+    </div>
+
+    ${isAdmin() ? `
+      <div class="content-grid">
+
+        <div class="content-section">
+          <h3>Add New Building</h3>
+
+          <form id="add-building-form">
+
+            <div class="form-group">
+              <label for="building-name">Building Name</label>
+              <input
+                type="text"
+                id="building-name"
+                placeholder="Example: SAB Building"
+                maxlength="100"
+                required
+              >
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              Add Building
+            </button>
+
+          </form>
         </div>
-      `).join("") || "<p>No classrooms found.</p>"}
+
+        <div class="content-section">
+          <h3>Add New Classroom</h3>
+
+          <form id="add-room-form">
+
+            <div class="form-group">
+              <label for="room-name">Classroom Name</label>
+              <input
+                type="text"
+                id="room-name"
+                placeholder="Example: Classroom 301"
+                maxlength="100"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="room-building">Building</label>
+
+              <select id="room-building" required>
+                <option value="">Select Building</option>
+
+                ${buildings.map((building) => `
+                  <option value="${escapeHTML(building.id)}">
+                    ${escapeHTML(buildingName(building))}
+                  </option>
+                `).join("")}
+
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="room-capacity">Capacity</label>
+
+              <input
+                type="number"
+                id="room-capacity"
+                min="1"
+                max="10000"
+                placeholder="Example: 40"
+                required
+              >
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              Add Classroom
+            </button>
+
+          </form>
+        </div>
+
+      </div>
+
+      <div class="content-section">
+        <h3>Buildings</h3>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Building ID</th>
+                <th>Building Name</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${buildings.map((building) => `
+                <tr>
+                  <td>${escapeHTML(building.id)}</td>
+                  <td>${escapeHTML(buildingName(building))}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ` : ""}
+
+    <div class="content-section">
+
+      <h3>Available Classrooms</h3>
+
+      <div class="classroom-grid">
+
+        ${rooms.map((room) => `
+          <div class="classroom-card">
+
+            <h3>${escapeHTML(roomName(room))}</h3>
+
+            <div class="room-details">
+              <div>
+                Building: ${escapeHTML(findBuildingName(room.building_id))}
+              </div>
+
+              <div>
+                Capacity: ${escapeHTML(room.capacity)}
+              </div>
+
+              <div>
+                Status: ${escapeHTML(room.status || "Available")}
+              </div>
+            </div>
+
+            ${isAdmin() ? `
+              <div style="display:flex;gap:8px;margin-top:16px;">
+
+                <button
+                  type="button"
+                  class="btn btn-primary btn-small"
+                  data-edit-room="${escapeHTML(room.id)}"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-danger btn-small"
+                  data-delete-room="${escapeHTML(room.id)}"
+                >
+                  Delete
+                </button>
+
+              </div>
+            ` : ""}
+
+          </div>
+        `).join("") || "<p>No classrooms found.</p>"}
+
+      </div>
+    </div>
+  `;
+
+  if (!isAdmin()) return;
+
+  /* ADD BUILDING */
+
+  $("add-building-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const name = $("building-name").value.trim();
+
+    if (!name) return;
+
+    const button = event.submitter;
+    if (button) button.disabled = true;
+
+    const { error } = await supabase
+      .from("buildings")
+      .insert({
+        name,
+        status: "Active"
+      });
+
+    if (button) button.disabled = false;
+
+    if (error) {
+      showMessage(error.message, true);
+      return;
+    }
+
+    await navigate("rooms");
+    showMessage("Building added successfully.");
+  });
+
+  /* ADD CLASSROOM */
+
+  $("add-room-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const name = $("room-name").value.trim();
+    const building_id = Number($("room-building").value);
+    const capacity = Number($("room-capacity").value);
+
+    if (
+      !name ||
+      !Number.isInteger(building_id) ||
+      !buildings.some((b) => Number(b.id) === building_id) ||
+      !Number.isInteger(capacity) ||
+      capacity < 1 ||
+      capacity > 10000
+    ) {
+      showMessage("Please enter valid classroom details.", true);
+      return;
+    }
+
+    const button = event.submitter;
+    if (button) button.disabled = true;
+
+    const { error } = await supabase
+      .from("classrooms")
+      .insert({
+        name,
+        building_id,
+        capacity,
+        status: "Available"
+      });
+
+    if (button) button.disabled = false;
+
+    if (error) {
+      showMessage(error.message, true);
+      return;
+    }
+
+    await navigate("rooms");
+    showMessage("Classroom added successfully.");
+  });
+
+  /* EDIT CLASSROOM */
+
+  document.querySelectorAll("[data-edit-room]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const room = rooms.find(
+        (r) => String(r.id) === button.dataset.editRoom
+      );
+
+      if (!room) return;
+
+      const name = prompt("Classroom name:", roomName(room));
+
+      if (name === null) return;
+
+      if (!name.trim() || name.trim().length > 100) {
+        showMessage("Invalid classroom name.", true);
+        return;
+      }
+
+      const capacityInput = prompt(
+        "Classroom capacity:",
+        room.capacity
+      );
+
+      if (capacityInput === null) return;
+
+      const capacity = Number(capacityInput);
+
+      if (!Number.isInteger(capacity) || capacity < 1 || capacity > 10000) {
+        showMessage("Invalid capacity.", true);
+        return;
+      }
+
+      const buildingInput = prompt(
+        "Enter Building ID:\n" +
+        buildings.map((b) =>
+          `${b.id} - ${buildingName(b)}`
+        ).join("\n"),
+        room.building_id
+      );
+
+      if (buildingInput === null) return;
+
+      const building_id = Number(buildingInput);
+
+      if (!buildings.some((b) => Number(b.id) === building_id)) {
+        showMessage("Invalid building.", true);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("classrooms")
+        .update({
+          name: name.trim(),
+          capacity,
+          building_id
+        })
+        .eq("id", room.id);
+
+      if (error) {
+        showMessage(error.message, true);
+        return;
+      }
+
+      await navigate("rooms");
+      showMessage("Classroom updated successfully.");
+    });
+  });
+
+  /* DELETE CLASSROOM */
+
+  document.querySelectorAll("[data-delete-room]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const room = rooms.find(
+        (r) => String(r.id) === button.dataset.deleteRoom
+      );
+
+      if (!room) return;
+
+      const confirmed = confirm(
+        `Delete ${roomName(room)}? This action cannot be undone.`
+      );
+
+      if (!confirmed) return;
+
+      const { data, error } = await supabase
+        .from("classrooms")
+        .delete()
+        .eq("id", room.id)
+        .select("id");
+
+      if (error) {
+        showMessage(error.message, true);
+        return;
+      }
+
+      if (!data?.length) {
+        showMessage(
+          "Classroom was not deleted. Check Admin permissions.",
+          true
+        );
+        return;
+      }
+
+      await navigate("rooms");
+      showMessage("Classroom deleted successfully.");
+    });
+  });
+}
+
+/* =========================================
+   RESERVATIONS
+   ========================================= */
+
+function reservationTable(reservations, adminActions = false) {
+  if (!reservations.length) {
+    return `<div class="empty-state">No reservations found.</div>`;
+  }
+
+  return `
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Classroom</th>
+            <th>Requested By</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            ${adminActions ? "<th>Actions</th>" : ""}
+          </tr>
+        </thead>
+
+        <tbody>
+          ${reservations.map((reservation) => `
+            <tr>
+              <td>${escapeHTML(reservation.classroom)}</td>
+              <td>${escapeHTML(reservation.username || "User")}</td>
+              <td>${escapeHTML(reservation.reservation_date)}</td>
+              <td>${escapeHTML(reservation.reservation_time)}</td>
+              <td>${statusBadge(reservation.status)}</td>
+
+              ${adminActions ? `
+                <td>
+                  ${String(reservation.status).toLowerCase() === "pending" ? `
+                    <button
+                      type="button"
+                      class="btn btn-success btn-small"
+                      data-approve="${escapeHTML(reservation.id)}"
+                    >
+                      Approve
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-small"
+                      data-reject="${escapeHTML(reservation.id)}"
+                    >
+                      Reject
+                    </button>
+                  ` : "—"}
+                </td>
+              ` : ""}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
     </div>
   `;
 }
 
 async function renderReservations() {
   const reservations = await getReservations();
+  const rooms = await getRooms();
 
-  if (isAdmin()) {
-    dashboardContent.innerHTML = `
-      <h3>Manage Reservation Requests</h3>
-      <p>Review pending classroom reservations.</p>
-      ${reservationTable(reservations, true)}
-    `;
-    return;
-  }
+  $("dashboard-content").innerHTML = `
+    <h2>Reservations / Requests</h2>
 
-  const rooms = await getClassrooms();
+    ${!isAdmin() ? `
+      <div class="content-section">
+        <h3>Reserve a Classroom</h3>
 
-  dashboardContent.innerHTML = `
-    <h3>Request a Classroom</h3>
-    <p>Submit a classroom reservation for approval.</p>
+        <form id="reservation-form">
 
-    <form id="booking-form" class="booking-form">
-      <label for="booking-classroom">Classroom</label>
-      <select id="booking-classroom" required>
-        <option value="">Select classroom</option>
-        ${rooms.map((room) => {
-          const name = room.name || room.classroom_name;
-          return `<option value="${escapeHTML(name)}">
-            ${escapeHTML(name)}
-          </option>`;
-        }).join("")}
-      </select>
+          <div class="form-group">
+            <label for="reservation-classroom">Classroom</label>
 
-      <label for="booking-date">Reservation Date</label>
-      <input type="date" id="booking-date" required>
+            <select id="reservation-classroom" required>
+              <option value="">Select Classroom</option>
 
-      <label for="booking-time">Reservation Time</label>
-      <input type="time" id="booking-time" required>
+              ${rooms.map((room) => `
+                <option value="${escapeHTML(roomName(room))}">
+                  ${escapeHTML(roomName(room))}
+                </option>
+              `).join("")}
+            </select>
+          </div>
 
-      <button type="submit" class="primary-button">
-        Submit Request
-      </button>
-    </form>
+          <div class="form-group">
+            <label for="reservation-date">Reservation Date</label>
+            <input
+              id="reservation-date"
+              type="date"
+              required
+            >
+          </div>
 
-    <h3>My Reservations</h3>
-    ${reservationTable(reservations)}
+          <div class="form-group">
+            <label for="reservation-time">Reservation Time</label>
+            <input
+              id="reservation-time"
+              type="time"
+              required
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            Submit Reservation
+          </button>
+
+        </form>
+      </div>
+    ` : ""}
+
+    <div class="content-section">
+      <h3>${isAdmin() ? "Manage Requests" : "My Requests"}</h3>
+
+      ${reservationTable(reservations, isAdmin())}
+    </div>
   `;
 
-  $("booking-date").min =
-    new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-      .toISOString().split("T")[0];
+  const dateInput = $("reservation-date");
+  if (dateInput) {
+    const now = new Date();
+    const localDate = new Date(
+      now.getTime() - now.getTimezoneOffset() * 60000
+    ).toISOString().slice(0, 10);
 
-  $("booking-form").addEventListener("submit", submitReservation);
+    dateInput.min = localDate;
+  }
+
+  $("reservation-form")?.addEventListener(
+    "submit",
+    submitReservation
+  );
+
+  document.querySelectorAll("[data-approve]").forEach((button) => {
+    button.addEventListener("click", () => {
+      updateReservation(button.dataset.approve, "Approved");
+    });
+  });
+
+  document.querySelectorAll("[data-reject]").forEach((button) => {
+    button.addEventListener("click", () => {
+      updateReservation(button.dataset.reject, "Rejected");
+    });
+  });
 }
 
 async function submitReservation(event) {
   event.preventDefault();
 
-  if (isAdmin() || !currentUser) return;
+  const classroom = $("reservation-classroom").value;
+  const reservation_date = $("reservation-date").value;
+  const reservation_time = $("reservation-time").value;
 
-  const button = event.currentTarget.querySelector(
-    'button[type="submit"]'
-  );
-  button.disabled = true;
-
-  try {
-    const classroom = $("booking-classroom").value;
-    const reservationDate = $("booking-date").value;
-    const reservationTime = $("booking-time").value;
-
-    if (!classroom || !reservationDate || !reservationTime) {
-      throw new Error("Complete all reservation fields.");
-    }
-
-    const { error } = await supabase
-      .from("reservations")
-      .insert({
-        user_id: currentUser.id,
-        username: currentProfile.username,
-        role: roleName(),
-        classroom,
-        reservation_date: reservationDate,
-        reservation_time: reservationTime,
-        status: "Pending"
-      });
-
-    if (error) throw error;
-
-    await renderReservations();
-    showMessage("Reservation request submitted successfully!");
-  } catch (error) {
-    showMessage(error.message, true);
-    button.disabled = false;
+  if (!classroom || !reservation_date || !reservation_time) {
+    showMessage("Complete all reservation fields.", true);
+    return;
   }
+
+  const button = event.submitter;
+  if (button) button.disabled = true;
+
+  const { error } = await supabase
+    .from("reservations")
+    .insert({
+      user_id: currentUser.id,
+      username:
+        currentProfile?.username ||
+        currentProfile?.full_name ||
+        currentUser.email,
+      role: currentProfile?.role || "Student",
+      classroom,
+      reservation_date,
+      reservation_time,
+      status: "Pending"
+    });
+
+  if (button) button.disabled = false;
+
+  if (error) {
+    showMessage(error.message, true);
+    return;
+  }
+
+  await navigate("reservations");
+  showMessage("Reservation submitted successfully.");
 }
 
 async function updateReservation(id, status) {
   if (!isAdmin()) return;
 
-  const confirmed = confirm(
-    `Are you sure you want to ${status.toLowerCase()} this request?`
-  );
+  const { data, error } = await supabase
+    .from("reservations")
+    .update({ status })
+    .eq("id", id)
+    .eq("status", "Pending")
+    .select("id");
 
-  if (!confirmed) return;
-
-  try {
-    const { data, error } = await supabase
-      .from("reservations")
-      .update({ status })
-      .eq("id", id)
-      .eq("status", "Pending")
-      .select("id");
-
-    if (error) throw error;
-
-    if (!data?.length) {
-      throw new Error(
-        "This request may have already been processed."
-      );
-    }
-
-    await renderReservations();
-    showMessage(`Reservation ${status.toLowerCase()} successfully.`);
-  } catch (error) {
+  if (error) {
     showMessage(error.message, true);
+    return;
   }
+
+  if (!data?.length) {
+    showMessage(
+      "Request was not updated. Check its status or permissions.",
+      true
+    );
+    return;
+  }
+
+  await navigate("reservations");
+  showMessage(`Reservation ${status.toLowerCase()} successfully.`);
 }
 
+/* =========================================
+   REQUEST HISTORY
+   ========================================= */
+
 async function renderHistory() {
+  const reservations = await getReservations();
+
   const { data, error } = await supabase
     .from("reservation_history")
-    .select("*")
-    .order("changed_at", { ascending: false });
+    .select("*");
 
   if (error) throw error;
 
-  const records = data || [];
-  const headers = [
-    "Classroom", "Previous Status", "New Status", "Changed At"
-  ];
+  let history = data || [];
 
-  if (isAdmin()) headers.unshift("User");
+  if (!isAdmin()) {
+    const allowedIds = new Set(
+      reservations.map((r) => String(r.id))
+    );
 
-  const rows = records.map((record) => `
-    <tr>
-      ${isAdmin()
-        ? `<td>${escapeHTML(record.username)}</td>`
-        : ""}
-      <td>${escapeHTML(record.classroom)}</td>
-      <td>${escapeHTML(record.old_status || "New Request")}</td>
-      <td>${statusBadge(record.new_status)}</td>
-      <td>${escapeHTML(
-        new Date(record.changed_at).toLocaleString()
-      )}</td>
-    </tr>
-  `);
+    history = history.filter((entry) =>
+      allowedIds.has(String(entry.reservation_id))
+    );
+  }
 
-  dashboardContent.innerHTML = `
-    <h3>Reservation History</h3>
-    <p>View reservation status changes.</p>
-    ${renderTable(headers, rows)}
+  $("dashboard-content").innerHTML = `
+    <h2>Request History</h2>
+
+    <div class="content-section">
+      ${history.length ? `
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Reservation ID</th>
+                <th>Previous Status</th>
+                <th>New Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${history.map((entry) => `
+                <tr>
+                  <td>${escapeHTML(entry.reservation_id)}</td>
+                  <td>${escapeHTML(entry.old_status || "—")}</td>
+                  <td>${escapeHTML(entry.new_status || "—")}</td>
+                  <td>${escapeHTML(
+                    entry.changed_at ||
+                    entry.created_at ||
+                    "—"
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `
+        <div class="empty-state">
+          No request history found.
+        </div>
+      `}
+    </div>
   `;
 }
 
-async function switchView(view) {
-  if (!currentUser) return;
+/* =========================================
+   NAVIGATION
+   ========================================= */
 
+async function navigate(view) {
   currentView = view;
-  clearMessage();
+  showMessage("");
 
-  document.querySelectorAll(".navigation button")
-    .forEach((button) => {
-      button.classList.toggle(
-        "active",
-        button.dataset.view === view
-      );
-    });
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.view === view
+    );
+  });
 
-  dashboardContent.innerHTML = "<p>Loading...</p>";
+  const content = $("dashboard-content");
+
+  if (!content) return;
+
+  content.innerHTML = `
+    <div class="loading">Loading...</div>
+  `;
 
   try {
-    if (view === "dashboard") await renderDashboard();
-    else if (view === "rooms") await renderRooms();
-    else if (view === "reservations") await renderReservations();
-    else if (view === "history") await renderHistory();
-    else await renderDashboard();
+    switch (view) {
+      case "rooms":
+        await renderRooms();
+        break;
+
+      case "reservations":
+        await renderReservations();
+        break;
+
+      case "history":
+        await renderHistory();
+        break;
+
+      default:
+        await renderDashboard();
+    }
   } catch (error) {
-    dashboardContent.innerHTML = "";
-    showMessage(error.message, true);
+    content.innerHTML = "";
+    showMessage(error.message || "Unable to load data.", true);
   }
 }
 
-async function sendPasswordReset(event) {
+/* =========================================
+   AUTHENTICATION
+   ========================================= */
+
+async function initializeSession() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data.user) {
+    currentUser = null;
+    currentProfile = null;
+    showLogin();
+    return;
+  }
+
+  currentUser = data.user;
+
+  try {
+    await loadProfile();
+  } catch (profileError) {
+    showLogin();
+    showLoginError(
+      "Unable to load profile: " + profileError.message
+    );
+    return;
+  }
+
+  showLoginError("");
+  showDashboard();
+
+  if ($("dashboard-title")) {
+    $("dashboard-title").textContent =
+      `ClassReserve - ${currentProfile?.role || "User"} Dashboard`;
+  }
+
+  if ($("welcome-message")) {
+    $("welcome-message").textContent =
+      `Welcome, ${
+        currentProfile?.full_name ||
+        currentProfile?.username ||
+        currentUser.email
+      }`;
+  }
+
+  await navigate("dashboard");
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  showLoginError("");
+
+  const email = $("email")?.value.trim();
+  const password = $("password")?.value;
+
+  if (!email || !password) {
+    showLoginError("Enter your email and password.");
+    return;
+  }
+
+  const button = $("login-button");
+  if (button) button.disabled = true;
+
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    await initializeSession();
+  } catch (error) {
+    showLoginError(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function handleLogout() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    showMessage(error.message, true);
+    return;
+  }
+
+  currentUser = null;
+  currentProfile = null;
+  showLogin();
+}
+
+async function handleResetRequest(event) {
   event.preventDefault();
 
-  if (!supabase) return;
-
-  const email = $("reset-email").value.trim();
+  const email = $("reset-email")?.value.trim();
+  if (!email) return;
 
   const { error } = await supabase.auth.resetPasswordForEmail(
     email,
     {
-      redirectTo: window.location.origin +
-        window.location.pathname
+      redirectTo:
+        window.location.origin + window.location.pathname
     }
   );
 
-  showLoginError(
-    error
-      ? error.message
-      : "If the email is registered, a reset link will be sent."
-  );
+  if (error) {
+    showLoginError(error.message);
+  } else {
+    showLoginError(
+      "If the email is registered, a reset link will be sent."
+    );
+  }
 }
 
-async function saveNewPassword(event) {
+async function handleNewPassword(event) {
   event.preventDefault();
 
-  if (!supabase) return;
+  const password = $("new-password")?.value;
 
-  const password = $("new-password").value;
+  if (!password) return;
 
   const { error } = await supabase.auth.updateUser({
     password
@@ -580,86 +1024,83 @@ async function saveNewPassword(event) {
 
   if (error) {
     showLoginError(error.message);
+  } else {
+    showLoginError("Password updated successfully.");
+  }
+}
+
+/* =========================================
+   INITIALIZATION
+   ========================================= */
+
+function setupEvents() {
+  $("login-form")?.addEventListener(
+    "submit",
+    handleLogin
+  );
+
+  $("logout-button")?.addEventListener(
+    "click",
+    handleLogout
+  );
+
+  $("forgot-password-button")?.addEventListener(
+    "click",
+    () => {
+      $("reset-password-form")?.classList.toggle("hidden");
+    }
+  );
+
+  $("reset-password-form")?.addEventListener(
+    "submit",
+    handleResetRequest
+  );
+
+  $("new-password-form")?.addEventListener(
+    "submit",
+    handleNewPassword
+  );
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      navigate(button.dataset.view);
+    });
+  });
+}
+
+async function start() {
+  setupEvents();
+
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_KEY ||
+    !SUPABASE_KEY.startsWith("sb_publishable_")
+  ) {
+    showLoginError(
+      "Supabase setup is incomplete. Check supabase-config.js."
+    );
     return;
   }
 
-  $("new-password-form").hidden = true;
-  $("login-form").hidden = false;
+  try {
+    supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
 
-  showLoginError("");
-  alert("Password updated successfully.");
-}
-
-function registerEvents() {
-  loginForm.addEventListener("submit", handleLogin);
-
-  $("logout-button").addEventListener("click", handleLogout);
-
-  $("forgot-password-button").addEventListener("click", () => {
-    const form = $("reset-password-form");
-    form.hidden = !form.hidden;
-  });
-
-  $("reset-password-form").addEventListener(
-    "submit", sendPasswordReset
-  );
-
-  $("new-password-form").addEventListener(
-    "submit", saveNewPassword
-  );
-
-  document.querySelectorAll(".navigation button")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        switchView(button.dataset.view);
-      });
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        currentUser = null;
+        currentProfile = null;
+        showLogin();
+      }
     });
 
-  dashboardContent.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-    if (!button) return;
-
-    const id = Number(button.dataset.id);
-
-    if (!Number.isSafeInteger(id) || id <= 0) return;
-
-    if (button.dataset.action === "approve") {
-      updateReservation(id, "Approved");
-    } else if (button.dataset.action === "reject") {
-      updateReservation(id, "Rejected");
-    }
-  });
-}
-
-async function startApp() {
-  registerEvents();
-
-  if (!initializeSupabase()) return;
-
-  supabase.auth.onAuthStateChange((event) => {
-    if (event === "PASSWORD_RECOVERY") {
-      loginForm.hidden = true;
-      $("new-password-form").hidden = false;
-      $("reset-password-form").hidden = true;
-    }
-  });
-
-  try {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error && error.name !== "AuthSessionMissingError") {
-      console.warn("Session check:", error.message);
-    }
-
-    if (data?.user) {
-      await openDashboard(data.user);
-    }
+    await initializeSession();
   } catch (error) {
-    console.error("ClassReserve startup error:", error);
-    dashboardSection.hidden = true;
-    loginSection.hidden = false;
+    showLogin();
     showLoginError(error.message);
   }
 }
 
-startApp();
+start();
